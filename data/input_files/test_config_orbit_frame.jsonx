@@ -1,0 +1,52 @@
+{
+  "scenario": "Two-Satellite RIC Simulation",
+  
+    "simulation": {
+    "duration": 36000,                  // seconds
+    "time_step": 10,                   // seconds
+    "reference_frame": "RIC",
+    "propagator": "two_body",          // options: two_body, J2, etc.
+    "perturbations": {
+      "J2": true,
+      "drag": false,
+      "solar_pressure": false
+    }
+  },
+
+"satellites": [
+    {
+      "name": "Chief",
+      "initial_state": {
+        "r": [7000.0, 0.0, 0.0],        // Position in orbit frame [km]
+        "v": [0.0, 7.5, 1.0],           // Velocity in orbit frame [km/s]
+        "frame": "orbit"                 // Orbit frame (e.g., ECI or LVLH)
+      },
+      "mass": 500.0,
+      "properties": {
+        "area": 10.0,
+        "Cd": 2.2
+      }
+    },
+    {
+      "name": "Deputy",
+      "initial_state_RIC": {
+        "r": [-0.005, 0.005, 0],          // Relative position w.r.t chief [km]
+        "v": [0.00, 0.0, 0.001]         // Relative velocity [km/s]
+      },
+      "mass": 300.0,
+      "properties": {
+        "area": 5.0,
+        "Cd": 2.0
+      }
+    }
+  ],
+
+
+  "output": {
+    "save_trajectory": true,
+    "save_gnc_results": true,
+    "trajectory_file": "data/results/trajectory.csv",
+    "gnc_file": "data/results/gnc_results.csv",
+    "plots": true
+  }
+}
