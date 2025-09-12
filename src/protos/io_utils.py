@@ -15,6 +15,10 @@ def parse_input(file_path: str) -> dict:
     # Extract output parameters
     output_config = config.get("output", {})
 
+    # Extract propagator selection (default to CWH)
+    propagator = sim_config.get("propagator", "CWH").upper()
+    sim_config["propagator"] = propagator  # store in sim_config for downstream use
+
     # Process satellites
     satellites = config.get("satellites", [])
 
@@ -38,7 +42,7 @@ def parse_input(file_path: str) -> dict:
     else:
         raise ValueError("Deputy initial state not properly defined")
     
-    # Dynamics input: absolute positions/velocities
+    # Dynamics input: absolute positions/velocities + simulation config
     dynamics_input = {
         "chief_r": chief_r,
         "chief_v": chief_v,
@@ -48,7 +52,7 @@ def parse_input(file_path: str) -> dict:
             "chief": chief.get("properties", {}),
             "deputy": deputy.get("properties", {})
         },
-        "simulation": sim_config
+        "simulation": sim_config  # includes propagator
     }
 
     # GNC input: same as dynamics, plus any GNC-specific params
@@ -66,7 +70,8 @@ def parse_input(file_path: str) -> dict:
     postprocess_input = {
         "trajectory_file": output_config.get("trajectory_file", "data/results/trajectory.csv"),
         "gnc_file": output_config.get("gnc_file", "data/results/gnc_results.csv"),
-        "plots": output_config.get("plots", True)
+        "plots": output_config.get("plots", True),
+        "propagator": propagator  # pass propagator to postprocess
     }
 
     # Return all in a single config dict

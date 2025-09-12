@@ -3,9 +3,9 @@
   
     "simulation": {
     "duration": 3600,                  // seconds
-    "time_step": 10,                   // seconds
+    "time_step": 0.10,                   // seconds
     "reference_frame": "RIC",
-    "propagator": "two_body",          // options: two_body, J2, etc.
+    "propagator": "CWH",          // options: CHW, TH
     "perturbations": {
       "J2": true,
       "drag": false,
@@ -19,7 +19,7 @@
       "initial_state": {
         "r": [7000.0, 0.0, 0.0],        // Position in orbit frame [km]
         "v": [0.0, 7.5, 1.0],           // Velocity in orbit frame [km/s]
-        "frame": "orbit"                 // Orbit frame (e.g., ECI or LVLH)
+        "frame": "ECI"                 // options: ECI, RIC, LVLH
       },
       "mass": 500.0,
       "properties": {
