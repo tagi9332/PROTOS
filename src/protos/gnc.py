@@ -1,18 +1,42 @@
-def run(trajectory: dict, config: dict):
+def step(state: dict, config: dict) -> dict:
     """
-    Placeholder GNC module.
-    Currently just passes through the trajectory without modification.
+    Placeholder GNC step.
+    Right now just echoes back the deputy state without modification.
     
-    trajectory: dict from dynamics.propagate
+    state: dict with chief/deputy positions and velocities
     config: GNC config dictionary (currently unused)
     
-    Returns a dictionary compatible with postprocess.
+    Returns a dictionary for this timestep.
     """
-    # Wrap the trajectory in a results dict for compatibility
-    gnc_results = {
+    return {
         "status": "pass-through",
-        "time": trajectory.get("time", []),
-        "state": trajectory.get("state", [])
+        "deputy_r": state["deputy_r"].tolist(),
+        "deputy_v": state["deputy_v"].tolist(),
+        "chief_r": state["chief_r"].tolist(),
+        "chief_v": state["chief_v"].tolist(),
     }
-    
-    return gnc_results
+
+
+def run(trajectory: dict, config: dict) -> dict:
+    """
+    Backward-compatible wrapper for batch processing.
+    Calls step() on each trajectory point.
+    """
+    times = trajectory.get("time", [])
+    states = trajectory.get("state", [])
+
+    results = []
+    for t, y in zip(times, states):
+        step_out = {
+            "t": t,
+            "status": "pass-through",
+            "state": y
+        }
+        results.append(step_out)
+
+    return {
+        "status": "batch-pass-through",
+        "time": times,
+        "state": states,
+        "results": results
+    }
