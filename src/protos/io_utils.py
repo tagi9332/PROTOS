@@ -1,7 +1,7 @@
 import commentjson as json  # instead of import json
 import numpy as np
 
-from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial, LVLH_DCM
+from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial, LVLH_DCM, compute_omega
 def parse_input(file_path: str) -> dict:
     """
     Parse the JSONX input file and prepare input dictionaries
@@ -35,10 +35,10 @@ def parse_input(file_path: str) -> dict:
     if "initial_state" in deputy and deputy["initial_state"].get("frame", "").upper() == "ECI":
         deputy_r = np.array(deputy["initial_state"]["r"])
         deputy_v = np.array(deputy["initial_state"]["v"])
-        # Compute DCM from inertial to RIC
+        # Compute DCM from inertial to LVLH
         C_HN = LVLH_DCM(chief_r, chief_v) 
         deputy_rho = C_HN @ (deputy_r - chief_r)
-        omega = np.array([0, 0, np.linalg.norm(np.cross(chief_r, chief_v)) / np.dot(chief_r, chief_r)])
+        omega = compute_omega(chief_r, chief_v)
         deputy_rho_dot = C_HN @ (deputy_v - chief_v) - np.cross(omega, deputy_rho)  # assuming zero angular velocity for simplicity
     elif "initial_state" in deputy and deputy["initial_state"].get("frame", "").upper() == "LVLH":
         deputy_rho = np.array(deputy["initial_state"]["r"])
