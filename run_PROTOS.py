@@ -25,6 +25,8 @@ def main():
         "chief_v": np.array(dyn_config["chief_v"]),
         "deputy_r": np.array(dyn_config["deputy_r"]),
         "deputy_v": np.array(dyn_config["deputy_v"]),
+        "deputy_rho": np.array(dyn_config["deputy_rho"]),
+        "deputy_rho_dot": np.array(dyn_config["deputy_rho_dot"]),
     }
 
     # Storage for trajectory and GNC outputs
@@ -45,11 +47,33 @@ def main():
         state = next_state
 
     # 4. Prepare postprocess-compatible dictionaries
-    # Stack deputy positions + velocities as "state" for plotting
-    post_dict = {
-        "time": t_eval.tolist(),
-        "state": [np.hstack((res["deputy_r"], res["deputy_v"])).tolist() for res in gnc_results]
-    }
+    post_dict = {}
+
+    # Store the time array (convert NumPy array to regular Python list for JSON compatibility)
+    post_dict["time"] = t_eval.tolist()
+
+    # Build the "full_state" list
+    full_state_list = []
+    for res in gnc_results:
+        # Collect all parts of the state vector into one array
+        state_parts = [
+            res["chief_r"],        # Chief position
+            res["chief_v"],        # Chief velocity
+            res["deputy_r"],       # Deputy position
+            res["deputy_v"],       # Deputy velocity
+            res["deputy_rho"],     # Deputy relative position (maybe in LVLH/Hill frame)
+            res["deputy_rho_dot"], # Deputy relative velocity
+        ]
+        
+        # Stack them into a single 1D vector
+        state_vector = np.hstack(state_parts)
+
+        # Convert to a regular Python list (again for JSON serialization)
+        full_state_list.append(state_vector.tolist())
+
+    # Add to dictionary
+    post_dict["full_state"] = full_state_list
+
 
     # 5. Postprocess results (save JSON + plots)
     postprocess.postprocess(post_dict, output_dir="data/results")

@@ -10,10 +10,12 @@ def step(state: dict, config: dict) -> dict:
     """
     return {
         "status": "pass-through",
-        "deputy_r": state["deputy_r"].tolist(),
-        "deputy_v": state["deputy_v"].tolist(),
         "chief_r": state["chief_r"].tolist(),
         "chief_v": state["chief_v"].tolist(),
+        "deputy_r": state["deputy_r"].tolist(),
+        "deputy_v": state["deputy_v"].tolist(),
+        "deputy_rho": state["deputy_rho"].tolist(),
+        "deputy_rho_dot": state["deputy_rho_dot"].tolist()
     }
 
 

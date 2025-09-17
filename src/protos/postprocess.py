@@ -1,8 +1,7 @@
 import os
-import json
+import csv
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 def _convert_ndarray(obj):
     """
@@ -23,69 +22,120 @@ def postprocess(gnc_results: dict, output_dir: str):
     """
     os.makedirs(output_dir, exist_ok=True)
 
-    # Recursively convert any ndarray to list
+    # Recursively convert any ndarray to list (if needed)
     gnc_serializable = _convert_ndarray(gnc_results)
 
-    # Save GNC results to JSON
-    output_json = os.path.join(output_dir, "gnc_results.json")
-    with open(output_json, 'w') as f:
-        json.dump(gnc_serializable, f, indent=4)
-    print(f"GNC results saved to {output_json}")
+    # Save GNC results to CSV
+    output_csv = os.path.join(output_dir, "gnc_results.csv")
+    with open(output_csv, "w", newline="") as f:
+        writer = csv.writer(f)
 
-    # Extract time and states
-    time = gnc_serializable.get("time", []) # type: ignore
-    states = gnc_serializable.get("state", []) # type: ignore
+        # Write header row
+        writer.writerow([
+            "time",
+            "chief_r_x", "chief_r_y", "chief_r_z",
+            "chief_v_x", "chief_v_y", "chief_v_z",
+            "deputy_r_x", "deputy_r_y", "deputy_r_z",
+            "deputy_v_x", "deputy_v_y", "deputy_v_z",
+            "deputy_rho_x", "deputy_rho_y", "deputy_rho_z",
+            "deputy_rho_dot_x", "deputy_rho_dot_y", "deputy_rho_dot_z"
+        ])
 
-    if not time or not states:
-        print("No trajectory data found in gnc_results. Skipping plots.")
-        return
+        # Write data rows (zip to align time with each state vector)
+        for t, state_vector in zip(gnc_results["time"], gnc_results["full_state"]):
+            writer.writerow([t] + state_vector)
 
-    # Convert to numpy array for plotting
-    states = np.array(states, dtype=float)
-    x, y, z, vx, vy, vz = states.T
+    print(f"GNC results saved to {output_csv}")
 
-    # Initial and final positions
-    x0, y0, z0 = x[0], y[0], z[0]
-    xf, yf, zf = x[-1], y[-1], z[-1]
+    def plot_trajectories(gnc_serializable, output_dir):
+        # Extract time and states
+        time = gnc_serializable.get("time", [])  # type: ignore
+        states = gnc_serializable.get("full_state", [])  # type: ignore
 
-    # 3D Trajectory Plot
-    fig = plt.figure(figsize=(10, 8))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot(x, y, z, label='Deputy Trajectory', color='blue')
-    ax.scatter([0], [0], [0], color='red', s=60, label='Chief (origin)')  # type: ignore
-    ax.scatter([x0], [y0], [z0], color='green', s=60, label='Deputy Start') # type: ignore
-    ax.scatter([xf], [yf], [zf], color='black', s=60, label='Deputy End') # type: ignore
-    ax.set_xlabel('Radial (km)')
-    ax.set_ylabel('In-track (km)')
-    ax.set_zlabel('Cross-track (km)')
-    ax.set_title('Deputy Trajectory in RIC Frame')
-    ax.legend()
-    ax.grid(True)
-    plt.tight_layout()
-    traj_plot_path = os.path.join(output_dir, "trajectory_RIC.png")
-    plt.savefig(traj_plot_path)
-    plt.close()
-    print(f"Trajectory plot saved to {traj_plot_path}")
+        if not time or not states:
+            print("No trajectory data found in gnc_results. Skipping plots.")
+            return
 
-    # Optional: 2D projections
-    projections = [
-        ('Radial vs In-track', x, y, 'x (km)', 'y (km)', 'RIC_xy.png'),
-        ('Radial vs Cross-track', x, z, 'x (km)', 'z (km)', 'RIC_xz.png'),
-        ('In-track vs Cross-track', y, z, 'y (km)', 'z (km)', 'RIC_yz.png')
-    ]
+        # Convert states to numpy array
+        states = np.array(states, dtype=float)  # shape (N, 18)
 
-    for title, X, Y, xlabel, ylabel, filename in projections:
-        plt.figure(figsize=(7, 6))
-        plt.plot(X, Y, color='blue')
-        plt.scatter([0], [0], color='red', s=60, label='Chief')
-        plt.scatter([X[0]], [Y[0]], color='green', s=60, label='Start')
-        plt.scatter([X[-1]], [Y[-1]], color='black', s=60, label='End')
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.title(title)
-        plt.legend()
-        plt.grid(True)
+        # -------------------------
+        # Relative RIC frame
+        # -------------------------
+        rho = states[:, 12:15]       # deputy_rho
+        rho_dot = states[:, 15:18]   # deputy_rho_dot
+
+        x_r, y_r, z_r = rho.T  # RIC frame
+        vx_r, vy_r, vz_r = rho_dot.T
+
+        # Initial and final relative positions
+        x0_r, y0_r, z0_r = x_r[0], y_r[0], z_r[0]
+        xf_r, yf_r, zf_r = x_r[-1], y_r[-1], z_r[-1]
+
+        # 3D Relative Trajectory
+        fig = plt.figure(figsize=(10, 8))
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot(x_r, y_r, z_r, label='Deputy Trajectory', color='blue')
+        ax.scatter([0], [0], [0], color='red', s=60, label='Chief (origin)') # type: ignore
+        ax.scatter([x0_r], [y0_r], [z0_r], color='green', s=60, label='Deputy Start') # type: ignore
+        ax.scatter([xf_r], [yf_r], [zf_r], color='black', s=60, label='Deputy End') # type: ignore
+        ax.set_xlabel('Radial (km)')
+        ax.set_ylabel('In-track (km)')
+        ax.set_zlabel('Cross-track (km)') # type: ignore
+        ax.set_title('Deputy Relative Trajectory in RIC Frame')
+        ax.legend()
+        ax.grid(True)
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, filename))
+        plt.savefig(os.path.join(output_dir, "trajectory_RIC.png"))
         plt.close()
-        print(f"Projection plot saved to {os.path.join(output_dir, filename)}")
+
+        # 2D projections
+        projections = [
+            ('Radial vs In-track', x_r, y_r, 'Radial (km)', 'In-track (km)', 'RIC_xy.png'),
+            ('Radial vs Cross-track', x_r, z_r, 'Radial (km)', 'Cross-track (km)', 'RIC_xz.png'),
+            ('In-track vs Cross-track', y_r, z_r, 'In-track (km)', 'Cross-track (km)', 'RIC_yz.png')
+        ]
+
+        for title, X, Y, xlabel, ylabel, filename in projections:
+            plt.figure(figsize=(7, 6))
+            plt.plot(X, Y, color='blue')
+            plt.scatter([0], [0], color='red', s=60, label='Chief')
+            plt.scatter([X[0]], [Y[0]], color='green', s=60, label='Start')
+            plt.scatter([X[-1]], [Y[-1]], color='black', s=60, label='End')
+            plt.xlabel(xlabel)
+            plt.ylabel(ylabel)
+            plt.title(title)
+            plt.legend()
+            plt.grid(True)
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, filename))
+            plt.close()
+
+        # -------------------------
+        # Inertial ECI frame
+        # -------------------------
+        chief_r = states[:, 0:3]
+        deputy_r = states[:, 6:9]
+
+        x_c, y_c, z_c = chief_r.T
+        x_d, y_d, z_d = deputy_r.T
+
+        fig = plt.figure(figsize=(10, 8))
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot(x_c, y_c, z_c, label='Chief Trajectory', color='red')
+        ax.plot(x_d, y_d, z_d, label='Deputy Trajectory', color='blue')
+        ax.scatter([x_c[0]], [y_c[0]], [z_c[0]], color='red', s=60, label='Chief Start') # type: ignore
+        ax.scatter([x_d[0]], [y_d[0]], [z_d[0]], color='green', s=60, label='Deputy Start') # type: ignore
+        ax.set_xlabel('ECI X (km)')
+        ax.set_ylabel('ECI Y (km)')
+        ax.set_zlabel('ECI Z (km)') # type: ignore
+        ax.set_title('Inertial Trajectories (ECI Frame)')
+        ax.legend()
+        ax.grid(True)
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, "trajectory_ECI.png"))
+        plt.close()
+
+        print(f"RIC and ECI trajectory plots saved in {output_dir}")
+
+    plot_trajectories(gnc_serializable, output_dir)

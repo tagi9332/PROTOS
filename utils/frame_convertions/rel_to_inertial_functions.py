@@ -14,9 +14,9 @@ def LVLH_DCM(r, v):
     h_hat = h / np.linalg.norm(h)
     theta_hat = np.cross(h_hat, r_hat)
 
-    C_N_H = np.vstack((r_hat, theta_hat, h_hat))
+    C_H_N = np.vstack((r_hat, theta_hat, h_hat))
 
-    return C_N_H
+    return C_H_N
 
 
 def inertial_to_LVLH(r,v):

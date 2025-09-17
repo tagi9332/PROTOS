@@ -3,11 +3,10 @@
   
     "simulation": {
     "duration": 3600,                  // seconds
-    "time_step": 0.10,                   // seconds
-    "reference_frame": "RIC",
+    "time_step": 10,                   // seconds
     "propagator": "CWH",          // options: CHW, TH
     "perturbations": {
-      "J2": true,
+      "J2": false,
       "drag": false,
       "solar_pressure": false
     }
@@ -17,9 +16,9 @@
     {
       "name": "Chief",
       "initial_state": {
-        "r": [7000.0, 0.0, 0.0],        // Position in orbit frame [km]
-        "v": [0.0, 7.5, 1.0],           // Velocity in orbit frame [km/s]
-        "frame": "ECI"                 // options: ECI, RIC, LVLH
+        "r": [-6685.20926, 601.51244, 3346.06634],        // Position in orbit frame [km]
+        "v": [-1.74294, -6.70242, -2.27739],           // Velocity in orbit frame [km/s]
+        "frame": "ECI"                 // options: ECI
       },
       "mass": 500.0,
       "properties": {
@@ -29,9 +28,13 @@
     },
     {
       "name": "Deputy",
-      "initial_state_RIC": {
-        "r": [-0.005, 0.005, 0],          // Relative position w.r.t chief [km]
-        "v": [0.00, 0.0, 0.001]         // Relative velocity [km/s]
+      "initial_state": {
+        "r": [-81.22301, 248.14201, 94.95904],          // Relative position w.r.t chief [km]
+        "v": [0.47884, 0.14857, 0.13577],         // Relative velocity [km/s]
+        "frame": "LVLH"                 // options: LVLH, ECI, RIC
+        // "r": [-6635.56553292, 330.29202509, 3311.95123111],          // Relative position w.r.t chief [km]
+        // "v": [-1.91912006, -6.79965453, -2.07925096],         // Relative velocity [km/s]
+        // "frame": "ECI"                 // options: LVLH, ECI, RIC
       },
       "mass": 300.0,
       "properties": {
