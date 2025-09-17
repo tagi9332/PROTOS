@@ -22,6 +22,8 @@ def step(state: dict, dt: float, config: dict):
         return _step_cwh(state, dt, config)
     elif propagator == "TH":
         return _step_th(state, dt, config)
+    elif propagator == "2BODY":
+        return _step_2body(state, dt, config)
     else:
         raise ValueError(f"Unknown propagator '{propagator}'")
 
@@ -61,9 +63,19 @@ def _step_cwh(state: dict, dt: float, config: dict):
     next_r = deputy_r + deputy_v * dt
     next_v = deputy_v + np.array([ax, ay, az]) * dt
 
+    # Propagate chief using keplerian motion (circular orbit)
+    theta = n * dt
+    cos_theta = np.cos(theta)
+    sin_theta = np.sin(theta)
+    R = np.array([[cos_theta, -sin_theta, 0],
+                  [sin_theta,  cos_theta, 0],
+                  [0,          0,         1]])
+    chief_r_next = R @ chief_r
+    chief_v_next = R @ chief_v
+
     return {
-        "chief_r": chief_r.copy(),
-        "chief_v": chief_v.copy(),
+        "chief_r": chief_r_next,
+        "chief_v": chief_v_next,
         "deputy_r": next_r,
         "deputy_v": next_v
     }
@@ -76,4 +88,27 @@ def _step_th(state: dict, dt: float, config: dict):
     Placeholder for TH step function.
     """
     print("TH propagator step selected, not yet implemented.")
+    return state.copy()
+
+
+# -------------------------------
+# 2-Body step implementation (shell)
+# -------------------------------
+def _step_2body(state: dict, dt: float, config: dict):
+    chief_r = state["chief_r"]
+    chief_v = state["chief_v"]
+    deputy_r = state["deputy_r"]
+    deputy_v = state["deputy_v"]
+    sim = config.get("simulation", {})
+    perturb = sim.get("perturbations", {})
+
+    # Convert deputy position to inertial frame
+
+    # Propagate both chief and deputy using 2-body dynamics
+    
+
+
+
+
+
     return state.copy()
