@@ -90,3 +90,15 @@ def rel_vector_to_inertial(rho_H,rho_dot_H,rc_N,vc_N):
     vd_N = C_N_H.T @ (vd_H + np.cross(omega, rd_H))
 
     return rd_N, vd_N
+
+def compute_omega(r, v):
+    """
+    Compute angular velocity of LVLH(Hill) frame given inertial position and velocity.
+    """
+    r = np.array(r)
+    v = np.array(v)
+
+    h = np.cross(r, v)
+    omega = np.array([0, 0, np.linalg.norm(h) / np.dot(r, r)])
+
+    return omega

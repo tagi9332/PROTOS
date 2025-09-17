@@ -1,5 +1,5 @@
 import numpy as np
-from utils.frame_convertions.rel_to_inertial_functions import LVLH_DCM, rel_vector_to_inertial 
+from utils.frame_convertions.rel_to_inertial_functions import LVLH_DCM, rel_vector_to_inertial, compute_omega
 
 # Earth constants
 MU_EARTH = 398600.4418  # km^3/s^2
@@ -165,7 +165,7 @@ def _step_2body(state: dict, dt: float, config: dict):
     # Compute updated relative state in LVLH frame
     C_HN = LVLH_DCM(chief_r_next, chief_v_next) 
     deputy_rho_next = C_HN @ (deputy_r_next - chief_r_next)
-    omega = np.array([0, 0, np.linalg.norm(np.cross(chief_r_next, chief_v_next)) / np.dot(chief_r_next, chief_r_next)])
+    omega = compute_omega(chief_r_next, chief_v_next)
     deputy_rho_dot_next = C_HN @ (deputy_v_next - chief_v_next) - np.cross(omega, deputy_rho_next)  # assuming zero angular velocity for simplicity
 
     # Return updated state
