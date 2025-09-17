@@ -3,7 +3,7 @@
   
     "simulation": {
     "duration": 2000,                  // seconds
-    "time_step": 0.1,                   // seconds
+    "time_step": 100,                   // seconds
     "propagator": "LINEARIZED_2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
     "perturbations": {
       "J2": false,
