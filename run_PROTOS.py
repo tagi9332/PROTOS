@@ -3,7 +3,7 @@
 Main entry point for PROTOS simulation framework (time-stepped execution).
 """
 
-from src.protos import io_utils, dynamics, gnc, postprocess
+from src import io_utils, dynamics, gnc, postprocess
 import numpy as np
 
 def main():

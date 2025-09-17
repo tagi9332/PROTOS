@@ -1,0 +1,80 @@
+## 2-Body full nonlinear equations of motion
+import numpy as np
+from utils.frame_convertions.rel_to_inertial_functions import LVLH_DCM, rel_vector_to_inertial, compute_omega
+from .constants import MU_EARTH, R_EARTH, J2
+
+def step_2body(state: dict, dt: float, config: dict):
+    """
+    Propagate chief and deputy using two-body dynamics in inertial frame with RK4.
+    state: dict containing chief and deputy positions/velocities
+    dt: time step [s]
+    config: simulation config dict
+    """
+    chief_r = state["chief_r"]
+    chief_v = state["chief_v"]
+    deputy_r = state["deputy_r"]
+    deputy_v = state["deputy_v"]
+    sim = config.get("simulation", {})
+    perturb = sim.get("perturbations", {})
+
+    # Acceleration function
+    def accel(r):
+        r_mag = np.linalg.norm(r)
+        a = -MU_EARTH * r / r_mag**3
+
+        # Optional J2 perturbation
+        if perturb.get("J2", False):
+            z2 = r[2] ** 2
+            factor = 1.5 * J2 * MU_EARTH * R_EARTH**2 / r_mag**5
+            a[0] -= factor * (1 - 5 * z2 / r_mag**2) * r[0]
+            a[1] -= factor * (1 - 5 * z2 / r_mag**2) * r[1]
+            a[2] -= factor * (3 - 5 * z2 / r_mag**2) * r[2]
+        return a
+
+    # RK4 integration for chief
+    k1_vc = accel(chief_r) * dt
+    k1_rc = chief_v * dt
+
+    k2_vc = accel(chief_r + 0.5 * k1_rc) * dt
+    k2_rc = (chief_v + 0.5 * k1_vc) * dt
+
+    k3_vc = accel(chief_r + 0.5 * k2_rc) * dt
+    k3_rc = (chief_v + 0.5 * k2_vc) * dt
+
+    k4_vc = accel(chief_r + k3_rc) * dt
+    k4_rc = (chief_v + k3_vc) * dt
+
+    chief_r_next = chief_r + (k1_rc + 2*k2_rc + 2*k3_rc + k4_rc) / 6
+    chief_v_next = chief_v + (k1_vc + 2*k2_vc + 2*k3_vc + k4_vc) / 6
+
+    # RK4 integration for deputy
+    k1_vd = accel(deputy_r) * dt
+    k1_rd = deputy_v * dt
+
+    k2_vd = accel(deputy_r + 0.5 * k1_rd) * dt
+    k2_rd = (deputy_v + 0.5 * k1_vd) * dt
+
+    k3_vd = accel(deputy_r + 0.5 * k2_rd) * dt
+    k3_rd = (deputy_v + 0.5 * k2_vd) * dt
+
+    k4_vd = accel(deputy_r + k3_rd) * dt
+    k4_rd = (deputy_v + k3_vd) * dt
+
+    deputy_r_next = deputy_r + (k1_rd + 2*k2_rd + 2*k3_rd + k4_rd) / 6
+    deputy_v_next = deputy_v + (k1_vd + 2*k2_vd + 2*k3_vd + k4_vd) / 6
+
+    # Compute updated relative state in LVLH frame
+    C_HN = LVLH_DCM(chief_r_next, chief_v_next) 
+    deputy_rho_next = C_HN @ (deputy_r_next - chief_r_next)
+    omega = compute_omega(chief_r_next, chief_v_next)
+    deputy_rho_dot_next = C_HN @ (deputy_v_next - chief_v_next) - np.cross(omega, deputy_rho_next)  # assuming zero angular velocity for simplicity
+
+    # Return updated state
+    return {
+        "chief_r": chief_r_next,
+        "chief_v": chief_v_next,
+        "deputy_r": deputy_r_next,
+        "deputy_v": deputy_v_next,
+        "deputy_rho": deputy_rho_next,
+        "deputy_rho_dot": deputy_rho_dot_next
+    }
