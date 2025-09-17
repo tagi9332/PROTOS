@@ -2,9 +2,9 @@
   "scenario": "Two-Satellite RIC Simulation",
   
     "simulation": {
-    "duration": 3600,                  // seconds
-    "time_step": 10,                   // seconds
-    "propagator": "CWH",          // options: CHW, TH
+    "duration": 2000,                  // seconds
+    "time_step": 1,                   // seconds
+    "propagator": "2BODY",          // options: CWH, 2BODY, TH
     "perturbations": {
       "J2": false,
       "drag": false,
