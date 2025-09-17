@@ -1,36 +1,16 @@
 import numpy as np
+import os
+
+os.chdir("H:/tanne/Documents/PROTOS")
+
+# Import helper functions
+from utils.frame_convertions.rel_to_inertial_functions import LVLH_basis_vectors, LVLH_DCM, inertial_to_LVLH, inertial_to_rel_vector
+
 
 # Earth constants
 MU_EARTH = 398600.4418  # km^3/s^2
 R_EARTH = 6378.137      # km
 J2 = 1.08263e-3
-
-# -------------------------------
-# Helper functions
-# -------------------------------
-def LVLH_basis_vectors(rc, vc):
-    """Return LVLH frame unit vectors based on chief inertial state."""
-    r_hat = rc / np.linalg.norm(rc)
-    h_vec = np.cross(rc, vc)
-    h_hat = h_vec / np.linalg.norm(h_vec)
-    theta_hat = np.cross(h_hat, r_hat)
-    return r_hat, theta_hat, h_hat
-
-def LVLH_DCM(rc, vc):
-    """Direction cosine matrix from inertial to LVLH frame."""
-    r_hat, theta_hat, h_hat = LVLH_basis_vectors(rc, vc)
-    return np.vstack([r_hat, theta_hat, h_hat]).T
-
-def inertial_to_LVLH(rc, vc, deputy_r=None, deputy_v=None):
-    """Convert deputy state to LVLH relative frame (or chief to its own LVLH)."""
-    C = LVLH_DCM(rc, vc)
-    rc_LVLH = C.T @ rc
-    vc_LVLH = C.T @ vc
-    if deputy_r is not None and deputy_v is not None:
-        rho = C.T @ (deputy_r - rc)
-        rho_dot = C.T @ (deputy_v - vc)
-        return rho, rho_dot
-    return rc_LVLH, vc_LVLH
 
 # -------------------------------
 # Main step
@@ -124,7 +104,7 @@ def _step_th(state: dict, dt: float, config: dict):
     deputy_r = state.get("deputy_r", np.zeros(3))
     deputy_v = state.get("deputy_v", np.zeros(3))
 
-    rho, rho_dot = inertial_to_LVLH(chief_r, chief_v, deputy_r, deputy_v)
+    rho, rho_dot = inertial_to_rel_vector(deputy_r, deputy_v, chief_r, chief_v)
 
     return {
         "chief_r": chief_r,
@@ -173,7 +153,7 @@ def _step_2body(state: dict, dt: float, config: dict):
     chief_r_next, chief_v_next = rk4_step(chief_r, chief_v, dt)
     deputy_r_next, deputy_v_next = rk4_step(deputy_r, deputy_v, dt)
 
-    rho, rho_dot = inertial_to_LVLH(chief_r_next, chief_v_next, deputy_r_next, deputy_v_next)
+    rho, rho_dot = inertial_to_rel_vector(deputy_r_next, deputy_v_next, chief_r_next, chief_v_next)
 
     return {
         "chief_r": chief_r_next,
@@ -183,3 +163,5 @@ def _step_2body(state: dict, dt: float, config: dict):
         "deputy_r_LVLH": rho,
         "deputy_v_LVLH": rho_dot
     }
+
+

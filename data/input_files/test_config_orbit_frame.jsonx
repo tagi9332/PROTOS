@@ -5,7 +5,7 @@
     "duration": 3600,                  // seconds
     "time_step": 0.10,                   // seconds
     "reference_frame": "RIC",
-    "propagator": "CWH",          // options: CHW, TH
+    "propagator": "CWH",          // options: CHW, TH, 2BODY
     "perturbations": {
       "J2": true,
       "drag": false,
@@ -17,8 +17,8 @@
     {
       "name": "Chief",
       "initial_state": {
-        "r": [7000.0, 0.0, 0.0],        // Position in orbit frame [km]
-        "v": [0.0, 7.5, 1.0],           // Velocity in orbit frame [km/s]
+        "r": [42164.137, 0.0, 0.0],        // Position in orbit frame [km]
+        "v": [0.0, 3.074, 0],           // Velocity in orbit frame [km/s]
         "frame": "ECI"                 // options: ECI, RIC, LVLH
       },
       "mass": 500.0,

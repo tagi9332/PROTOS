@@ -19,13 +19,17 @@ def main():
     steps = int(duration / dt) + 1
     t_eval = np.linspace(0, duration, steps)
 
-    # 2. Initialize state
+    # 2. Initialize state (inertial)
     state = {
         "chief_r": np.array(dyn_config["chief_r"]),
         "chief_v": np.array(dyn_config["chief_v"]),
         "deputy_r": np.array(dyn_config["deputy_r"]),
         "deputy_v": np.array(dyn_config["deputy_v"]),
+        # Initialize LVLH relative state
+        "deputy_r_LVLH": 
+        "deputy_v_LVLH": 
     }
+
 
     # Storage for trajectory and GNC outputs
     trajectory = []
@@ -45,10 +49,12 @@ def main():
         state = next_state
 
     # 4. Prepare postprocess-compatible dictionaries
-    # Stack deputy positions + velocities as "state" for plotting
+    # Stack both inertial and LVLH deputy states
     post_dict = {
         "time": t_eval.tolist(),
-        "state": [np.hstack((res["deputy_r"], res["deputy_v"])).tolist() for res in gnc_results]
+        "state_inertial": [np.hstack((res["deputy_r"], res["deputy_v"])).tolist() for res in gnc_results],
+        "state_LVLH": [np.hstack((res["deputy_r_LVLH"], res["deputy_v_LVLH"])).tolist() for res in gnc_results],
+        "chief_state": [np.hstack((res["chief_r"], res["chief_v"])).tolist() for res in gnc_results]
     }
 
     # 5. Postprocess results (save JSON + plots)

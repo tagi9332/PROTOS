@@ -90,3 +90,20 @@ def rel_vector_to_inertial(rho_H,rho_dot_H,rc_N,vc_N):
     vd_N = C_N_H.T @ (vd_H + np.cross(omega, rd_H))
 
     return rd_N, vd_N
+
+def inertial_to_rel_vector(rd_N,vd_N,rc_N,vc_N):
+    """
+    Compute deputy relative position and velocity in LVLH frame from inertial states.
+    """
+
+    # Chief in LVLH (Hill) frame
+    rc_H, vc_H = inertial_to_LVLH(rc_N, vc_N)
+
+    # Deputy in LVLH (Hill) frame
+    rd_H, vd_H = inertial_to_LVLH(rd_N, vd_N)
+
+    # Relative state in LVLH frame
+    rho_H = rd_H - rc_H
+    rho_dot_H = vd_H - vc_H
+
+    return rho_H, rho_dot_H
