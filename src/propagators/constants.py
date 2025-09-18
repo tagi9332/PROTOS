@@ -1,4 +1,5 @@
 # constants.py
+# Vallado 2013, Fundamentals of Astrodynamics and Applications, 4th Edition
 
 # Gravitational parameters [km^3/s^2]
 MU_EARTH = 398600.4418
