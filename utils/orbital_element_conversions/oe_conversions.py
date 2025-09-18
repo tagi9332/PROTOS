@@ -1,5 +1,7 @@
 import numpy as np
 
+from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial
+
 def inertial_to_orbital_elements(r, v, mu=398600.4418):
     """
     Convert inertial state vectors (r, v) to classical orbital elements.
@@ -114,3 +116,69 @@ def orbital_elements_to_inertial(a, e, i, AOP, RAAN, TA, mu=398600.4418):
     v = R @ v_pf
 
     return r, v
+
+# compute mean motion from inertial state vectors
+def compute_mean_motion_from_ECI(r, v, mu=398600.4418):
+    """
+    Compute the mean motion from inertial state vectors (r, v).
+    r: position vector (km)
+    v: velocity vector (km/s)
+    mu: gravitational parameter (km^3/s^2), default is Earth's
+
+    Returns: mean motion n (rad/s)
+    """
+    r = np.array(r)
+    v = np.array(v)
+    r_norm = np.linalg.norm(r)
+    v_norm = np.linalg.norm(v)
+
+    # Specific orbital energy
+    energy = v_norm**2 / 2 - mu / r_norm
+
+    # Semi-major axis
+    a = -mu / (2 * energy)
+
+    # Mean motion
+    n = np.sqrt(mu / a**3)
+
+    return n
+
+# Compute inertial state vector from LROEs
+def lroes_to_inertial(t, chief_r, chief_v, lroes, mu=398600.4418):
+    """
+    Convert LROEs to inertial state vectors (r, v) of the deputy.
+
+    """
+    chief_r = np.array(chief_r)
+    chief_v = np.array(chief_v)
+    A_0, B_0, alpha, beta, x_offset, y_offset = lroes
+
+    # Compute chief mean motion
+    n = compute_mean_motion_from_ECI(chief_r, chief_v, mu)
+
+    # Compute A_1 and A_2
+    A_1 = A_0 * np.cos(alpha)
+    A_2 = A_0 * np.sin(alpha)
+
+    # Compute B_1 and B_2
+    B_1 = B_0 * np.cos(beta)
+    B_2 = B_0 * np.sin(beta)
+
+    # Compute position state
+    x = A_1 * np.cos(n*t) - A_2 * np.sin(n*t) + x_offset
+    y = -2*A_1 * np.sin(n*t) - 2*A_2 * np.cos(n*t) - (3/2)*(n*x_offset*t) + y_offset
+    z = B_1 * np.cos(n*t) + B_2 * np.sin(n*t)
+
+    # Compute position state
+    x_dot = -A_1*n*np.sin(n*t) - A_2*n*np.cos(n*t)
+    y_dot = -2*A_1*n*np.cos(n*t) + 2*A_2*n*np.sin(n*t) - (3/2)*n*x_offset
+    z_dot = -B_1*n*np.sin(n*t) + B_2*n*np.cos(n*t)
+
+    # LVLH relative state vectors
+    deputy_rho = np.array([x, y, z])
+    deputy_rho_dot = np.array([x_dot, y_dot, z_dot])
+
+    # Convert to inertial frame
+    deputy_r, deputy_v = rel_vector_to_inertial(deputy_rho, deputy_rho_dot, chief_r, chief_v) 
+
+    return deputy_r, deputy_v

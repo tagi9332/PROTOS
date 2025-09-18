@@ -2,9 +2,9 @@
   "scenario": "Two-Satellite RIC Simulation",
   
     "simulation": {
-    "duration": 1300,                  // seconds
+    "duration": 2000,                  // seconds
     "time_step": 0.1,                   // seconds
-    "propagator": "CWH",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
+    "propagator": "LINEARIZED_2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
     "perturbations": {
       "J2": false,
       "drag": false,
@@ -15,12 +15,11 @@
 "satellites": [
     {
       "name": "Chief",
-      // "initial_state": {
-      // "state": [-6685.20926, 601.51244, 3346.06634, -1.74294, -6.70242, -2.27739], // km, km/s in ECI frame, degrees for OEs
-      // "frame": "ECI"                 // options: ECI, OEs
       "initial_state": {
-      "state": [6800,0,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
-      "frame": "OEs"                 // options: ECI, OEs      
+        "state": [-6685.20926, 601.51244, 3346.06634, -1.74294, -6.70242, -2.27739], // km, km/s in ECI frame, degrees for OEs
+        "frame": "ECI"                 // options: ECI, OEs
+        // "state": [7500,0,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
+        // "frame": "OEs"                 // options: ECI, OEs      
       },
       "mass": 500.0,
       "properties": {
@@ -31,13 +30,10 @@
     {
       "name": "Deputy",
     "initial_state": {
-      "state": [1.299038,-1.0000,0.3213938,-0.000844437,-0.00292521, -0.000431250], // km, km/s in ECI frame, degrees for OEs
-      "frame": "LVLH"                 // options: LVLH, ECI, RIC
-      // "state": [-81.22301, 248.14201, 94.95904, 0.47884, 0.14857, 0.13577], // [x, y, z, vx, vy, vz] relative to chief
-      // "frame": "LVLH"                 // options: LVLH, ECI, RIC
-        // "r": [-6635.56553292, 330.29202509, 3311.95123111],          // Relative position w.r.t chief [km]
-        // "v": [-1.91912006, -6.79965453, -2.07925096],         // Relative velocity [km/s]
-        // "frame": "ECI"                 // options: LVLH, ECI, RIC
+      // "state": [0, 0, 0, 0, 0, 200], // km, km/s in ECI frame, degrees for OEs, radians and km for LROEs
+      // "frame": "LROEs"                 // options: LVLH, ECI, RIC, LROEs
+      "state": [-81.22301,248.14201,94.95904, 0.47884, 0.14857, 0.13577], // km, km/s in ECI frame, degrees for OEs
+      "frame": "LVLH"                 // options: LVLH, ECI, RIC, LROEs
       },
       "mass": 300.0,
       "properties": {

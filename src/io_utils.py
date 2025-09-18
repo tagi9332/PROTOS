@@ -2,7 +2,7 @@ import commentjson as json  # instead of import json
 import numpy as np
 
 from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial, LVLH_DCM, compute_omega
-from utils.orbital_element_conversions.oe_conversions import orbital_elements_to_inertial
+from utils.orbital_element_conversions.oe_conversions import orbital_elements_to_inertial, lroes_to_inertial
 
 def parse_input(file_path: str) -> dict:
     """
@@ -67,6 +67,16 @@ def parse_input(file_path: str) -> dict:
         deputy_rho_dot = deputy_state[3:]
         # Convert to inertial frame
         deputy_r, deputy_v = rel_vector_to_inertial(deputy_rho, deputy_rho_dot, chief_r, chief_v)
+
+    elif frame == "LROES":
+        # Deputy is given in Linearized Relative Orbital Elements (LROEs) relative to chief
+        lroes = deputy_state  # [A_0, B_0, alpha, beta, x_offset, y_offset]
+        deputy_r, deputy_v = lroes_to_inertial(0, chief_r, chief_v, lroes)  # time t=0
+        # Convert to LVLH relative position and velocity
+        C_HN = LVLH_DCM(chief_r, chief_v) 
+        deputy_rho = C_HN @ (deputy_r - chief_r)
+        omega = compute_omega(chief_r, chief_v)
+        deputy_rho_dot = C_HN @ (deputy_v - chief_v) - np.cross(omega, deputy_rho)
 
     elif frame == "RIC":
         # TODO: implement RIC to inertial conversion

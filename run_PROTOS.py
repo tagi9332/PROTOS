@@ -14,7 +14,7 @@ def main():
 
     # Extract simulation parameters
     sim = dyn_config.get("simulation", {})
-    dt = sim.get("time_step", 10.0)
+    dt = sim.get("time_step", 10.0) 
     duration = sim.get("duration", 3600.0)
     steps = int(duration / dt) + 1
     t_eval = np.linspace(0, duration, steps)
