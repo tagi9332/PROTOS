@@ -112,6 +112,7 @@ def parse_input(file_path: str) -> dict:
     }
 
     # Postprocess input: trajectory and GNC results
+
     postprocess_input = {
         "trajectory_file": output_config.get("trajectory_file", "data/results/trajectory.csv"),
         "gnc_file": output_config.get("gnc_file", "data/results/gnc_results.csv"),
