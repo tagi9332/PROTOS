@@ -1,5 +1,6 @@
 ## CWH relative motion propagator
 import numpy as np
+from .perturbation_accel import compute_perturb_accel
 from utils.frame_convertions.rel_to_inertial_functions import LVLH_DCM, rel_vector_to_inertial, compute_omega
 from .constants import MU_EARTH, R_EARTH, J2
 
@@ -25,14 +26,11 @@ def step_cwh(state: dict, dt: float, config: dict):
     ay = -2 * n * vx
     az = -n**2 * z
 
-    # Optional J2 perturbation
-    if perturb.get("J2", False):
-        r_total = np.linalg.norm(chief_r + deputy_rho)
-        z2 = (chief_r[2] + z) ** 2
-        factor = 1.5 * J2 * MU_EARTH * R_EARTH ** 2 / r_total ** 5
-        ax -= factor * (1 - 5 * z2 / r_total ** 2) * (chief_r[0] + x)
-        ay -= factor * (1 - 5 * z2 / r_total ** 2) * (chief_r[1] + y)
-        az -= factor * (3 - 5 * z2 / r_total ** 2) * (chief_r[2] + z)
+    # # Compute perturbation accelerations if enabled
+    # a_pert = compute_perturb_accel(deputy_r, perturb)
+    # ax += a_pert[0]
+    # ay += a_pert[1]
+    # az += a_pert[2]
 
     # Euler integration of relative state for one step
     deputy_rho_next = deputy_rho + deputy_rho_dot * dt
