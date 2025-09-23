@@ -1,7 +1,7 @@
 import numpy as np
 from .perturbation_accel import compute_perturb_accel
 from utils.frame_convertions.rel_to_inertial_functions import LVLH_DCM, rel_vector_to_inertial, compute_omega
-from .constants import MU_EARTH
+from data.resources.constants import MU_EARTH
 
 def step_linearized_2body(state: dict, dt: float, config: dict):
     chief_r = state["chief_r"]

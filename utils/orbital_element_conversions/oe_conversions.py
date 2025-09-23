@@ -1,8 +1,9 @@
 import numpy as np
 
 from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial
+from data.resources.constants import MU_EARTH
 
-def inertial_to_orbital_elements(r, v, mu=398600.4418):
+def inertial_to_orbital_elements(r, v, mu=MU_EARTH):
     """
     Convert inertial state vectors (r, v) to classical orbital elements.
     r: position vector (km)

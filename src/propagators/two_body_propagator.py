@@ -1,9 +1,9 @@
 ## 2-Body full nonlinear equations of motion
 from logging import config
 import numpy as np
-from .perturbation_accel import compute_perturb_accel
+from src.propagators.perturbation_accel import compute_perturb_accel
 from utils.frame_convertions.rel_to_inertial_functions import LVLH_DCM, rel_vector_to_inertial, compute_omega
-from .constants import MU_EARTH, R_EARTH, J2
+from data.resources.constants import MU_EARTH, R_EARTH, J2
 
 def step_2body(state: dict, dt: float, config: dict):
     """
