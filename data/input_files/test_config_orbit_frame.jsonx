@@ -7,7 +7,7 @@
     "time_step": 10,                   // seconds
     "propagator": "2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
     "perturbations": {
-      "J2": true,
+      "J2": false,
       "drag": false,
       "solar_pressure": false
     }
@@ -17,10 +17,10 @@
     {
       "name": "Chief",
       "initial_state": {
-        "state": [-6685.20926, 601.51244, 3346.06634, -1.74294, -6.70242, -2.27739], // km, km/s in ECI frame, degrees for OEs
-        "frame": "ECI"                 // options: ECI, OEs
-        // "state": [7500,0,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
-        // "frame": "OEs"                 // options: ECI, OEs      
+        // "state": [-6685.20926, 601.51244, 3346.06634, -1.74294, -6.70242, -2.27739], // km, km/s in ECI frame, degrees for OEs
+        // "frame": "ECI"                 // options: ECI, OEs
+        "state": [6628,0,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
+        "frame": "OEs"                 // options: ECI, OEs      
       },
       "mass": 500.0,
       "properties": {

@@ -18,6 +18,7 @@ def step_2body(state: dict, dt: float, config: dict):
     deputy_v = state["deputy_v"]
 
     # Simulation and perturbations config
+    epoch = config.get("simulation", {}).get("epoch", None)
     sim = config.get("simulation", {})
     perturb_config = sim.get("perturbations", {})
 
@@ -48,7 +49,7 @@ def step_2body(state: dict, dt: float, config: dict):
         """
         r_mag = np.linalg.norm(r)
         a_total = -MU_EARTH * r / r_mag**3
-        a_total += compute_perturb_accel(r, v, perturb_config, drag_properties, mass)
+        a_total += compute_perturb_accel(r, v, perturb_config, drag_properties, mass, epoch)
         return a_total
 
     # RK4 integration for chief

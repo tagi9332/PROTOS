@@ -1,36 +1,25 @@
 import numpy as np
 from data.resources.constants import MU_EARTH, R_EARTH, J2
-# from pyatmos import expo
 
-# # Create a global Atmosphere instance (fast to reuse)
-# atm_model = expo()
+def get_density(r: np.ndarray, v: np.ndarray):
+    """
+    Simple atmospheric density model using exponential model.
+    """
+    altitude_km = np.linalg.norm(r) - R_EARTH
+    if altitude_km < 0:
+        return 0
 
-# def get_density(r: np.ndarray, epoch=None) -> float:
-#     """
-#     Get atmospheric density at a given ECI position using pyatmos.
-#     Simple approximation: only depends on altitude.
-    
-#     Parameters
-#     ----------
-#     r : np.ndarray
-#         ECI position vector [km]
-#     epoch : datetime.datetime, optional
-#         Not used for pyatmos but kept for compatibility
-    
-#     Returns
-#     -------
-#     rho : float
-#         Atmospheric density [kg/km^3]
-#     """
-#     r_mag = np.linalg.norm(r)
-#     alt_km = r_mag - R_EARTH
-#     # pyatmos returns kg/m^3, convert to kg/km^3
-#     rho = atm_model.density(alt_km) * 1e9
-#     return rho
+    # Exponential model parameters
+    scale_height = 12  # km
+    rho0 = 1.225  # kg/m^3 (sea level)
+
+    # Compute density
+    rho = rho0 * np.exp(-altitude_km / scale_height)
+    return rho
 
 
 def compute_perturb_accel(r: np.ndarray, v: np.ndarray, perturb_config: dict,
-                          drag_properties: dict, mass: float, epoch=None):
+                          drag_properties: dict, mass: float, epoch: str):
     """
     Compute perturbation accelerations for a spacecraft at position r.
 
@@ -65,15 +54,15 @@ def compute_perturb_accel(r: np.ndarray, v: np.ndarray, perturb_config: dict,
         a_pert[1] -= factor * (1 - 5 * z2 / r_mag**2) * r[1]
         a_pert[2] -= factor * (3 - 5 * z2 / r_mag**2) * r[2]
 
-    # # --- Drag perturbation ---
-    # if perturb_config.get("drag", False):
-    #     v_mag = np.linalg.norm(v)
-    #     if v_mag > 0:
-    #         Cd = drag_properties.get("cd", 2.2)
-    #         A = drag_properties.get("area", 1.0)
-    #         # Compute density via pyatmos
-    #         rho = get_density(r, epoch)
-    #         a_drag = -0.5 * rho * Cd * A / mass * v_mag * v
-    #         a_pert += a_drag
+    # --- Drag perturbation ---
+    if perturb_config.get("drag", False):
+        v_mag = np.linalg.norm(v)
+        if v_mag > 0:
+            Cd = drag_properties.get("cd")
+            A = drag_properties.get("area")
+            # Compute density via simple exponential model (TODO: replace with NRLMSISE-00 model)
+            rho = get_density(r, v)
+            a_drag = -0.5 * rho * Cd * A / mass * v_mag * v
+            a_pert += a_drag
 
     return a_pert
