@@ -57,9 +57,10 @@ Getting Started
    - numpy
    - matplotlib
    - commentjson
+   - pymsis
 
    You can install them with:
-   pip install numpy matplotlib commentjson
+   pip install numpy matplotlib commentjson pymsis
 
 2. Prepare a configuration file in JSONX format (examples in data/input_files).
 

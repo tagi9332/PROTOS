@@ -26,11 +26,24 @@ def step_cwh(state: dict, dt: float, config: dict):
     ay = -2 * n * vx
     az = -n**2 * z
 
-    # # Compute perturbation accelerations if enabled
-    # a_pert = compute_perturb_accel(deputy_r, perturb)
-    # ax += a_pert[0]
-    # ay += a_pert[1]
-    # az += a_pert[2]
+    # Compute perturbation accelerations if enabled
+    # Chief perturbations
+    a_pert_chief_inertial = compute_perturb_accel(chief_r, perturb)
+
+    # Deputy perturbations
+    a_pert_deputy_inertial = compute_perturb_accel(deputy_r, perturb)
+
+    # Compute differential perturbation acceleration
+    a_diff_inertial = a_pert_deputy_inertial - a_pert_chief_inertial
+
+    # Transform differential perturbation to LVLH frame
+    C_HN = LVLH_DCM(chief_r, chief_v)
+    a_diff = C_HN @ a_diff_inertial  # transform to LVLH
+
+    # Add differential perturbation to relative accelerations
+    ax += a_diff[0]
+    ay += a_diff[1]
+    az += a_diff[2]
 
     # Euler integration of relative state for one step
     deputy_rho_next = deputy_rho + deputy_rho_dot * dt

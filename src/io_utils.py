@@ -1,4 +1,5 @@
 import commentjson as json  # instead of import json
+import dateutil
 import numpy as np
 
 from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial, LVLH_DCM, compute_omega
@@ -14,12 +15,20 @@ def parse_input(file_path: str) -> dict:
     
     # Extract simulation parameters
     sim_config = config.get("simulation", {})
-    
+
+    # Parse epoch if present
+    epoch_str = sim_config.get("epoch", None)
+    if epoch_str is not None:
+        sim_config["epoch"] = dateutil.parser.isoparse(epoch_str)
+    else:
+        # Default to J2000: 2000-01-01 12:00:00 UTC
+        sim_config["epoch"] = dateutil.parser.isoparse("2000-01-01T12:00:00Z")
+
     # Extract output parameters
     output_config = config.get("output", {})
 
-    # Extract propagator selection (default to CWH)
-    propagator = sim_config.get("propagator", "CWH").upper()
+    # Extract propagator selection (default to 2BODY)
+    propagator = sim_config.get("propagator", "2BODY").upper()
     sim_config["propagator"] = propagator  # store in sim_config for downstream use
 
     # Process satellites
