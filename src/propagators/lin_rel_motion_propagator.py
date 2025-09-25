@@ -25,17 +25,13 @@ def step_linearized_2body(state: dict, dt: float, config: dict):
         # Compute deputy inertial position
         deputy_r_inertial = chief_r + np.array([x, y_, z])
         
-        # # Perturbation acceleration in inertial frame
-        # a_pert_inertial = compute_perturb_accel(deputy_r_inertial, perturb_config)
-        
-        # # LVLH DCM for chief
-        # C_HN = LVLH_DCM(chief_r, chief_v)
-        # a_pert_lvlh = C_HN @ a_pert_inertial  # transform to LVLH
+        # Perturbation acceleration in inertial frame [TODO]
+        a_pert_lvlh = np.zeros(3) # Placeholder for perturbation acceleration in LVLH frame
 
         # Linearized LVLH equations with perturbation
-        ax = 2 * f_dot * vy - (mu / r_c**3) * x + a_pert_lvlh[0]
-        ay = -2 * f_dot * vx - (mu / r_c**3) * y_ + a_pert_lvlh[1]
-        az = - (mu / r_c**3) * z + a_pert_lvlh[2]
+        ax = 2 * f_dot * vy - (mu / r_c**3) * x #+ a_pert_lvlh[0]
+        ay = -2 * f_dot * vx - (mu / r_c**3) * y_ #+ a_pert_lvlh[1]
+        az = - (mu / r_c**3) * z #+ a_pert_lvlh[2]
 
         return np.array([vx, vy, vz, ax, ay, az])
 
@@ -75,3 +71,5 @@ def step_linearized_2body(state: dict, dt: float, config: dict):
         "deputy_rho": deputy_rho_next,
         "deputy_rho_dot": deputy_rho_dot_next
     }
+
+

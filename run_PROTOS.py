@@ -8,7 +8,7 @@ import numpy as np
 
 def main():
     # 1. Parse input
-    config = io_utils.parse_input("data/input_files/test_config_orbit_frame.jsonx")
+    config = io_utils.parse_input("data/input_files/lin_twobody_regression_test.jsonx")
     dyn_config = config["dynamics"]
     gnc_config = config["gnc"]
 
