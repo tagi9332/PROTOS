@@ -3,7 +3,7 @@ import dateutil
 import numpy as np
 
 from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial, LVLH_DCM, compute_omega
-from utils.orbital_element_conversions.oe_conversions import orbital_elements_to_inertial, lroes_to_inertial
+from utils.orbital_element_conversions.oe_conversions import inertial_to_orbital_elements, orbital_elements_to_inertial, lroes_to_inertial
 
 def parse_input(file_path: str) -> dict:
     """
@@ -51,7 +51,7 @@ def parse_input(file_path: str) -> dict:
     elif frame == "OES":
         # Chief given in orbital elements vector [a, e, i, RAAN, AOP, TA]
         a, e, i, RAAN, AOP, TA = chief_vector
-        chief_r, chief_v = orbital_elements_to_inertial(a, e, i, AOP, RAAN, TA, mu=398600.4418)
+        chief_r, chief_v = orbital_elements_to_inertial(a, e, i, RAAN, AOP, TA, mu=398600.4418)
 
     else:
             raise ValueError("Chief initial state must be either ECI or ORBITAL_ELEMENTS")
@@ -86,6 +86,35 @@ def parse_input(file_path: str) -> dict:
         deputy_rho = C_HN @ (deputy_r - chief_r)
         omega = compute_omega(chief_r, chief_v)
         deputy_rho_dot = C_HN @ (deputy_v - chief_v) - np.cross(omega, deputy_rho)
+
+    elif frame == "DOES":
+        # Deputy is given in delta Orbital Elements (dOEs) relative to chief
+        dOEs = deputy_state  # [d_a, d_e, d_i, d_RAAN, d_AOP, d_TA]
+
+        # Compute chief's orbital elements
+        # If chief given in OEs, use those directly
+        if chief_initial.get("frame", "").upper() == "OES":
+            a_chief, e_chief, i_chief, RAAN_chief, AOP_chief, TA_chief = chief_vector
+        else:
+            a_chief, e_chief, i_chief, RAAN_chief, AOP_chief, TA_chief = inertial_to_orbital_elements(chief_r, chief_v)
+
+        # Apply delta OEs
+        a_dep = a_chief + dOEs[0]
+        e_dep = e_chief + dOEs[1]
+        i_dep = i_chief + dOEs[2]
+        RAAN_dep = RAAN_chief + dOEs[3]
+        AOP_dep = AOP_chief + dOEs[4]
+        TA_dep = TA_chief + dOEs[5]
+
+        # Convert deputy OEs to inertial
+        deputy_r, deputy_v = orbital_elements_to_inertial(a_dep, e_dep, i_dep, RAAN_dep, AOP_dep, TA_dep)
+
+        # Convert to LVLH relative position and velocity
+        C_HN = LVLH_DCM(chief_r, chief_v)
+        deputy_rho = C_HN @ (deputy_r - chief_r)
+        omega = compute_omega(chief_r, chief_v)
+        deputy_rho_dot = C_HN @ (deputy_v - chief_v) - np.cross(omega, deputy_rho)
+
 
     elif frame == "RIC":
         # TODO: implement RIC to inertial conversion

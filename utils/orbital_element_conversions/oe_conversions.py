@@ -3,100 +3,99 @@ import numpy as np
 from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial
 from data.resources.constants import MU_EARTH
 
-def inertial_to_orbital_elements(r, v, mu=MU_EARTH):
+def inertial_to_orbital_elements(R, V, mu=MU_EARTH):
     """
-    Convert inertial state vectors (r, v) to classical orbital elements.
-    r: position vector (km)
-    v: velocity vector (km/s)
+    Convert inertial state vectors (R, V) to classical orbital elements.
+    R: position vector (km)
+    V: velocity vector (km/s)
     mu: gravitational parameter (km^3/s^2), default is Earth's
 
-    Returns: a, e, i, AOP, RAAN, TA
+    Returns: a, e, i, RAAN, AOP, TA (IN DEGREES)
     """
-    r = np.array(r)
-    v = np.array(v)
-    h = np.cross(r, v)
-    h_norm = np.linalg.norm(h)
-    r_norm = np.linalg.norm(r)
-    v_norm = np.linalg.norm(v)
+    R = np.array(R, dtype=float)
+    V = np.array(V, dtype=float)
 
     # Eccentricity vector
-    e_vec = (np.cross(v, h) / mu) - (r / r_norm)
-    e = np.linalg.norm(e_vec)
+    Ecc = (np.cross(V, np.cross(R, V)) / mu) - (R / np.linalg.norm(R))
+    ecc = np.linalg.norm(Ecc)
 
-    # Semi-major axis
-    energy = v_norm**2 / 2 - mu / r_norm
-    a = -mu / (2 * energy)
+    # Angular momentum
+    H = np.cross(R, V)
+
+    # Line of nodes
+    N = np.cross([0, 0, 1], H)
+    Nhat = N / np.linalg.norm(N)
 
     # Inclination
-    i = np.arccos(h[2] / h_norm)
-
-    # Node vector
-    K = np.array([0, 0, 1])
-    n = np.cross(K, h)
-    n_norm = np.linalg.norm(n)
+    i = np.degrees(np.arccos(np.dot(H, [0, 0, 1]) / np.linalg.norm(H)))
 
     # RAAN
-    if n_norm != 0:
-        RAAN = np.arccos(n[0] / n_norm)
-        if n[1] < 0:
-            RAAN = 2 * np.pi - RAAN
-    else:
-        RAAN = 0
+    RAAN = np.degrees(np.arccos(Nhat[0]))
+    if Nhat[1] < 0:
+        RAAN = -RAAN
 
-    # Argument of Periapsis
-    if n_norm != 0 and e > 1e-8:
-        AOP = np.arccos(np.dot(n, e_vec) / (n_norm * e))
-        if e_vec[2] < 0:
-            AOP = 2 * np.pi - AOP
-    else:
-        AOP = 0
+    # Argument of periapsis
+    AOP = np.degrees(np.arccos(np.dot(Nhat, Ecc) / np.linalg.norm(Ecc)))
+    if Ecc[2] < 0:
+        AOP = -AOP
 
-    # True Anomaly
-    if e > 1e-8:
-        TA = np.arccos(np.dot(e_vec, r) / (e * r_norm))
-        if np.dot(r, v) < 0:
-            TA = 2 * np.pi - TA
-    else:
-        TA = 0
+    # True anomaly
+    TA = np.degrees(np.arccos(np.dot(Ecc, R) / (np.linalg.norm(R) * np.linalg.norm(Ecc))))
+    if np.dot(R, V) < 0:
+        TA = -TA
 
-    # Convert angles to degrees
-    i = np.degrees(i)
-    AOP = np.degrees(AOP)
-    RAAN = np.degrees(RAAN)
-    TA = np.degrees(TA)
+    # Semi-major axis
+    a = 1 / ((2 / np.linalg.norm(R)) - (np.linalg.norm(V)**2 / mu))
 
-    return a, e, i, AOP, RAAN, TA
+    return a, ecc, i, RAAN, AOP, TA
 
 
-def orbital_elements_to_inertial(a, e, i, AOP, RAAN, TA, mu=398600.4418):
-    p = a * (1 - e**2)
-    r_mag = p / (1 + e * np.cos(TA))
+def orbital_elements_to_inertial(a, e, i, RAAN, AOP, TA, mu=MU_EARTH):
+    """
+    Classical Orbital Elements -> inertial position/velocity.
 
-    # Perifocal coordinates
-    r_pf = np.array([r_mag * np.cos(TA), r_mag * np.sin(TA), 0])
-    v_pf = np.array([
-        -np.sqrt(mu / p) * np.sin(TA),
-        np.sqrt(mu / p) * (e + np.cos(TA)),
-        0
-    ])
+    Inputs:
+        a     : semi-major axis [km] (a<0 allowed for hyperbolic)
+        e     : eccentricity (scalar,e!=1)
+        i     : inclination [deg]
+        RAAN  : right ascension of ascending node Ω [deg]
+        AOP  : argument of perigee ω [deg]
+        TA    : true anomaly f [deg]
+        mu    : gravitational parameter [km^3/s^2]
 
-    # Rotation matrix from perifocal to inertial
-    cos_O = np.cos(RAAN)
-    sin_O = np.sin(RAAN)
-    cos_w = np.cos(AOP)
-    sin_w = np.sin(AOP)
-    cos_i = np.cos(i)
-    sin_i = np.sin(i)
+    Returns:
+        r : position vector in inertial frame [km]
+        v : velocity vector in inertial frame [km/s]
+    """
 
-    R = np.array([
-        [cos_O * cos_w - sin_O * sin_w * cos_i, -cos_O * sin_w - sin_O * cos_w * cos_i, sin_O * sin_i],
-        [sin_O * cos_w + cos_O * sin_w * cos_i, -sin_O * sin_w + cos_O * cos_w * cos_i, -cos_O * sin_i],
-        [sin_w * sin_i, cos_w * sin_i, cos_i]
-    ])
+    # Convert angles from degrees to radians
+    i = np.radians(i)
+    RAAN = np.radians(RAAN)
+    AOP = np.radians(AOP)
+    TA = np.radians(TA)
 
-    r = R @ r_pf
-    v = R @ v_pf
+    # semi-latus rectum (works for elliptical & hyperbolic; not defined for parabolic e=1)
+    if np.isclose(e, 1.0, atol=1e-12):
+        raise ValueError("Parabolic case (e close to 1) not supported.")
+    p = a * (1.0 - e**2)
 
+    cnu, snu = np.cos(TA), np.sin(TA)
+    r_pf = (p / (1.0 + e * cnu)) * np.array([cnu, snu, 0.0])
+    v_pf = np.sqrt(mu / p) * np.array([-snu, e + cnu, 0.0])
+
+    # Rotation PQW -> IJK
+    cO, sO = np.cos(RAAN), np.sin(RAAN)
+    ci, si = np.cos(i), np.sin(i)
+    co, so = np.cos(AOP), np.sin(AOP)
+
+    R3_O = np.array([[cO, -sO, 0.0], [sO, cO, 0.0], [0.0, 0.0, 1.0]])
+    R1_i = np.array([[1.0, 0.0, 0.0], [0.0, ci, -si], [0.0, si, ci]])
+    R3_o = np.array([[co, -so, 0.0], [so, co, 0.0], [0.0, 0.0, 1.0]])
+
+    Q_pqw_to_ijk = R3_O @ R1_i @ R3_o
+
+    r = Q_pqw_to_ijk @ r_pf
+    v = Q_pqw_to_ijk @ v_pf
     return r, v
 
 # compute mean motion from inertial state vectors

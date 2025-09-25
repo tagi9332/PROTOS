@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Main entry point for PROTOS simulation framework (time-stepped execution).
+Main entry point for PROTOS simulation framework.
 """
 
 from src import io_utils, dynamics, gnc, postprocess
@@ -30,8 +30,8 @@ def main():
     }
 
     # Storage for trajectory and GNC outputs
-    trajectory = []
-    gnc_results = []
+    trajectory = [state.copy()]
+    gnc_results = [gnc.step(state, gnc_config)]
 
     # 3. Time-stepped propagation loop
     for t in t_eval:
