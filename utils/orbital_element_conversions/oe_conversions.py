@@ -69,25 +69,6 @@ def inertial_to_orbital_elements(r, v, mu=MU_EARTH):
 
 
 def orbital_elements_to_inertial(a, e, i, AOP, RAAN, TA, mu=398600.4418):
-    """
-    Convert classical orbital elements to inertial state vectors (r, v).
-    a: semi-major axis (km)
-    e: eccentricity
-    i: inclination (deg)
-    AOP: argument of periapsis (deg)
-    RAAN: right ascension of ascending node (deg)
-    TA: true anomaly (deg)
-    mu: gravitational parameter (km^3/s^2), default is Earth's
-
-    Returns: r (km), v (km/s)
-    """
-    # Convert angles to radians
-    i = np.radians(i)
-    AOP = np.radians(AOP)
-    RAAN = np.radians(RAAN)
-    TA = np.radians(TA)
-
-    # Distance from focus to satellite
     p = a * (1 - e**2)
     r_mag = p / (1 + e * np.cos(TA))
 
