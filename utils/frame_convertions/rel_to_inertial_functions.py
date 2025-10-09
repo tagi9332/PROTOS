@@ -48,6 +48,7 @@ def LVLH_basis_vectors(r, v):
 
     r_hat = r / np.linalg.norm(r)
     h = np.cross(r, v)
+    h_norm = np.linalg.norm(h)
     h_hat = h / np.linalg.norm(h)
     theta_hat = np.cross(h_hat, r_hat)
 
