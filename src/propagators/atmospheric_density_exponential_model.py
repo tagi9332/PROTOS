@@ -33,9 +33,3 @@ def atmos_density_expm_model(h_km):
 
     return T_K, p_Pa, rho_kgm3
 
-
-# Example usage
-if __name__ == "__main__":
-    for h in [0, 10000, 20000, 50000, 80000, 100000]:  # altitudes in meters
-        T, p, rho = atmos_density_expm_model(h)
-        print(f"h = {h:6.0f} m → T = {T:7.2f} K, p = {p:9.2f} Pa, rho = {rho:10.5f} kg/m³")

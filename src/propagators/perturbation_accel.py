@@ -41,15 +41,18 @@ def compute_perturb_accel(r: np.ndarray, v: np.ndarray, perturb_config: dict,
 
     # --- Drag perturbation ---
     if perturb_config.get("drag", False):
-        v_mag = np.linalg.norm(v)
-        r_mag = np.linalg.norm(r)
+        # Relative position and velocity (in meters)
+        v_mag = np.linalg.norm(v)  # km/s
+        r_mag = np.linalg.norm(r)  # km
         alt = r_mag - R_EARTH
         if v_mag > 0:
             Cd = drag_properties.get("cd")
             A = drag_properties.get("area")
             # Compute density via simple exponential model (TODO: replace with NRLMSISE-00 model)
             T, p, rho = atmos_density_expm_model(alt)
-            a_drag = -0.5 * rho * Cd * A / mass * v_mag * v
+            a_drag = -0.5 * rho * Cd * A / mass * v_mag * 1000 * v * 1000  # m/s^2
+            # Convert drag acceleration to km/s^2
+            a_drag /= 1000
             a_pert += a_drag
 
     # --- Solar Radiation Pressure ---
