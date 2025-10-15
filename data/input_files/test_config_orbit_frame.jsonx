@@ -17,10 +17,10 @@
     {
       "name": "Chief",
       "initial_state": {
-        // "state": [-6685.20926, 601.51244, 3346.06634, -1.74294, -6.70242, -2.27739], // km, km/s in ECI frame, degrees for OEs
-        // "frame": "ECI"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])
-        "state": [6438,0,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
-        "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])      
+        "state": [-6685.20926, 601.51244, 3346.06634, -1.74294, -6.70242, -2.27739], // km, km/s in ECI frame, degrees for OEs
+        "frame": "ECI"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])
+        // "state": [6438,0,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
+        // "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])      
       },
       "mass": 500.0,
       "properties": {

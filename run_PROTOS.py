@@ -8,13 +8,13 @@ import numpy as np
 
 def main():
     # 1. Parse input
-    config = io_utils.parse_input("data/input_files/test_config_orbit_frame.jsonx")
+    config = io_utils.parse_input("data/input_files/twobody_regression_test.jsonx")
     dyn_config = config["dynamics"]
     gnc_config = config["gnc"]
 
     # Extract simulation parameters
     sim = dyn_config.get("simulation", {})
-    dt = sim.get("time_step", 10.0) 
+    dt = sim.get("time_step", 1) 
     duration = sim.get("duration", 3600.0)
     steps = int(duration / dt) + 1
     t_eval = np.linspace(0, duration, steps)
@@ -49,7 +49,7 @@ def main():
     # 4. Prepare postprocess-compatible dictionaries
     post_dict = {}
 
-    # Store the time array (convert NumPy array to regular Python list for JSON compatibility)
+    # Store the time array
     post_dict["time"] = t_eval.tolist()
 
     # Build the "full_state" list

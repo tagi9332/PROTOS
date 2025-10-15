@@ -50,7 +50,7 @@ def compute_perturb_accel(r: np.ndarray, v: np.ndarray, perturb_config: dict,
             A = drag_properties.get("area")
             # Compute density via simple exponential model (TODO: replace with NRLMSISE-00 model)
             T, p, rho = atmos_density_expm_model(alt)
-            a_drag = -0.5 * rho * Cd * A / mass * v_mag * 1000 * v * 1000  # m/s^2
+            a_drag = -0.5 * rho * Cd * A / mass * v_mag * 1000 * v * 1000  # type: ignore # m/s^2
             # Convert drag acceleration to km/s^2
             a_drag /= 1000
             a_pert += a_drag
