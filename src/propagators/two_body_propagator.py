@@ -18,7 +18,7 @@ def step_2body(state: dict, dt: float, config: dict):
     deputy_v = state["deputy_v"]
 
     # Simulation and perturbations config
-    epoch = config.get("simulation", {}).get("epoch", None)
+    epoch = state.get("epoch")
     sim = config.get("simulation", {})
     perturb_config = sim.get("perturbations", {})
 
@@ -27,9 +27,9 @@ def step_2body(state: dict, dt: float, config: dict):
     chief_props = sat_props.get("chief", {})
     deputy_props = sat_props.get("deputy", {})
 
-    # Masses (these are at the top level of each satellite in input JSON)
-    chief_mass = config.get("satellites", {}).get("chief", {}).get("mass", 1.0)
-    deputy_mass = config.get("satellites", {}).get("deputy", {}).get("mass", 1.0)
+    # Masses (TODO: Not currently working, default to 250kg and 500kg)
+    chief_mass = config.get("satellites", {}).get("chief", {}).get("mass", 250.0)
+    deputy_mass = config.get("satellites", {}).get("deputy", {}).get("mass", 500.0)
 
     # Drag-related properties (inside 'properties')
     chief_drag_properties = {
@@ -49,7 +49,7 @@ def step_2body(state: dict, dt: float, config: dict):
         """
         r_mag = np.linalg.norm(r)
         a_total = -MU_EARTH * r / r_mag**3
-        a_total += compute_perturb_accel(r, v, perturb_config, drag_properties, mass, epoch)
+        a_total += compute_perturb_accel(r, v, perturb_config, drag_properties, mass, epoch) # type: ignore
         return a_total
 
     # RK4 integration for chief

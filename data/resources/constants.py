@@ -12,3 +12,6 @@ R_MOON = 1737.4     # km, Moon radius
 
 # J2 perturbation constant
 J2 = 1.08262668e-3
+
+# Solar radiation pressure at 1 AU [N/m^2]
+P_SRP = 4.56e-6

@@ -3,6 +3,7 @@
 Main entry point for PROTOS simulation framework.
 """
 
+from datetime import timedelta
 from src import io_utils, dynamics, gnc, postprocess
 import numpy as np
 
@@ -18,9 +19,12 @@ def main():
     duration = sim.get("duration", 3600.0)
     steps = int(duration / dt) + 1
     t_eval = np.linspace(0, duration, steps)
+    epoch = sim["epoch"]
+
 
     # 2. Initialize state
     state = {
+        "epoch": dyn_config.get("epoch"),
         "chief_r": np.array(dyn_config["chief_r"]),
         "chief_v": np.array(dyn_config["chief_v"]),
         "deputy_r": np.array(dyn_config["deputy_r"]),
@@ -35,6 +39,11 @@ def main():
 
     # 3. Time-stepped propagation loop
     for t in t_eval:
+
+        # Increment time
+        epoch += timedelta(seconds=dt)
+        state["epoch"] = epoch
+
         # Propagate one step
         next_state = dynamics.step(state, dt, dyn_config)
         trajectory.append(next_state)

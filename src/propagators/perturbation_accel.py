@@ -1,7 +1,8 @@
 import numpy as np
 from datetime import datetime
-from data.resources.constants import MU_EARTH, R_EARTH, J2
-from src.propagators.atmospheric_density_exponential_model import atmos_density_expm_model
+from data.resources.constants import MU_EARTH, R_EARTH, J2, P_SRP
+from src.propagators.atmospheric_density_exponential_model import rho_expo_model
+from src.propagators.sun_vector_ECI import get_sun_vector_eci
 
 def compute_perturb_accel(r: np.ndarray, v: np.ndarray, perturb_config: dict,
                           drag_properties: dict, mass: float, epoch: datetime):
@@ -21,7 +22,7 @@ def compute_perturb_accel(r: np.ndarray, v: np.ndarray, perturb_config: dict,
     mass : float
         Spacecraft mass [kg]
     epoch : datetime, optional
-        UTC epoch (not needed for pyatmos, kept for compatibility)
+        UTC epoch
 
     Returns
     -------
@@ -41,43 +42,65 @@ def compute_perturb_accel(r: np.ndarray, v: np.ndarray, perturb_config: dict,
 
     # --- Drag perturbation ---
     if perturb_config.get("drag", False):
-        # Relative position and velocity (in meters)
-        v_mag = np.linalg.norm(v)  # km/s
+        # Altitude
         r_mag = np.linalg.norm(r)  # km
-        alt = r_mag - R_EARTH
-        if v_mag > 0:
+        alt = r_mag - R_EARTH       # km
+
+        # Velocity in m/s
+        v_m_s = v * 1000.0
+        v_mag_m_s = np.linalg.norm(v_m_s)
+
+        if v_mag_m_s > 0:
             Cd = drag_properties.get("cd")
-            A = drag_properties.get("area")
-            # Compute density via simple exponential model (TODO: replace with NRLMSISE-00 model)
-            T, p, rho = atmos_density_expm_model(alt)
-            a_drag = -0.5 * rho * Cd * A / mass * v_mag * 1000 * v * 1000  # type: ignore # m/s^2
-            # Convert drag acceleration to km/s^2
-            a_drag /= 1000
+            A_m = drag_properties.get("area")  # m^2
+
+            # Density in kg/m^3
+            rho_kgm3 = rho_expo_model(alt)
+
+            # Drag acceleration in m/s^2
+            a_drag_m_s2 = -0.5 * Cd * A_m / mass * rho_kgm3 * v_mag_m_s * v_m_s # type: ignore
+
+            # Convert to km/s^2
+            a_drag = a_drag_m_s2 / 1000.0
+
             a_pert += a_drag
 
     # --- Solar Radiation Pressure ---
     if perturb_config.get("SRP", False):
-        # Solar constant at 1 AU in W/m^2
-        S_sun = 1367.0
+        # Solar constant at 1 AU in W/km^2
+        S_sun = 1.3670
+
         # Speed of light in km/s
         c = 299792.458
+
         # Reflectivity coefficient (1.0 for perfect absorption, 2.0 for perfect reflection)
-        Cr = 1.0
+        Cr = 1.8
+
         # Effective cross-sectional area in m^2
         A_srp = drag_properties.get("area", 1.0)  # Assuming drag area as SRP area
 
-        # Distance from the Sun in km (assuming r is the position vector in ECI)
-        r_sun = np.linalg.norm(r)
-        # Unit vector pointing from spacecraft to Sun
-        r_hat_sun = -r / r_sun
+        # Sun vector in ECI frame (km)
+        r_sun = get_sun_vector_eci(epoch)
 
-        # Solar radiation pressure at spacecraft's distance
-        P_srp = S_sun / c * (1 / r_sun**2)
-        # Force due to SRP
-        F_srp = P_srp * A_srp * Cr
-        # Acceleration due to SRP
+        # Sun unit vector
+        r_hat_sun = r_sun / np.linalg.norm(r_sun)
+
+        # Force due to SRP (N)
+        F_srp = P_SRP * A_srp * Cr
+
+        # Acceleration due to SRP (m/s^2)
         a_srp = F_srp / mass
+
+        # Convert to km/s^2
+        a_srp /= 1000.0
+
+        # Vector from sun to spacecraft
+        r_sun_sc = r - r_sun
+        r_sun_sc_hat = r_sun_sc / np.linalg.norm(r_sun_sc)
+
+        a_srp = a_srp * r_sun_sc_hat  # Direction away from the Sun
+
         # Acceleration vector
-        a_pert += a_srp * r_hat_sun
+        a_pert += a_srp
 
     return a_pert

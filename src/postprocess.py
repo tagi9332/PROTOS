@@ -132,6 +132,13 @@ def postprocess(gnc_results: dict, output_dir: str):
         ax.set_title('Inertial Trajectories (ECI Frame)')
         ax.legend()
         ax.grid(True)
+        # Set axis to equal for proper aspect ratio
+        max_range = np.array([x_c.max()-x_c.min(), y_c.max()-y_c.min(), z_c.max()-z_c.min()]).max() / 2.0
+        mid_x = (x_c.max()+x_c.min()) * 0.5
+        ax.set_xlim(mid_x - max_range, mid_x + max_range)
+        ax.set_ylim(mid_x - max_range, mid_x + max_range)
+        ax.set_zlim(mid_x - max_range, mid_x + max_range) # type: ignore
+
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, "trajectory_ECI.png"))
         plt.close()
