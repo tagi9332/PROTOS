@@ -16,17 +16,17 @@ def _convert_ndarray(obj):
     else:
         return obj
 
-def postprocess(gnc_results: dict, output_dir: str):
+def postprocess(results: dict, output_dir: str):
     """
-    Save GNC results and generate trajectory plots in the RIC frame.
+    Save simulation results and generate trajectory plots in the RIC frame.
     """
     os.makedirs(output_dir, exist_ok=True)
 
     # Recursively convert any ndarray to list (if needed)
-    gnc_serializable = _convert_ndarray(gnc_results)
+    results_serializable = _convert_ndarray(results)
 
-    # Save GNC results to CSV
-    output_csv = os.path.join(output_dir, "gnc_results.csv")
+    # Save simulation results to CSV
+    output_csv = os.path.join(output_dir, "results.csv")
     with open(output_csv, "w", newline="") as f:
         writer = csv.writer(f)
 
@@ -42,18 +42,18 @@ def postprocess(gnc_results: dict, output_dir: str):
         ])
 
         # Write data rows (zip to align time with each state vector)
-        for t, state_vector in zip(gnc_results["time"], gnc_results["full_state"]):
+        for t, state_vector in zip(results["time"], results["full_state"]):
             writer.writerow([t] + state_vector)
 
-    print(f"GNC results saved to {output_csv}")
+    print(f"Results saved to {output_csv}")
 
-    def plot_trajectories(gnc_serializable, output_dir):
+    def plot_trajectories(results_serializable, output_dir):
         # Extract time and states
-        time = gnc_serializable.get("time", [])  # type: ignore
-        states = gnc_serializable.get("full_state", [])  # type: ignore
+        time = results_serializable.get("time", [])  # type: ignore
+        states = results_serializable.get("full_state", [])  # type: ignore
 
         if not time or not states:
-            print("No trajectory data found in gnc_results. Skipping plots.")
+            print("No trajectory data found in results. Skipping plots.")
             return
 
         # Convert states to numpy array
@@ -147,4 +147,4 @@ def postprocess(gnc_results: dict, output_dir: str):
 
         print(f"RIC and ECI trajectory plots saved in {output_dir}")
 
-    plot_trajectories(gnc_serializable, output_dir)
+    plot_trajectories(results_serializable, output_dir)

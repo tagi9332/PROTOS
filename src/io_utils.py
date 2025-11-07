@@ -11,10 +11,10 @@ def parse_input(file_path: str) -> dict:
     for dynamics, GNC, and postprocessing.
     """
     with open(file_path, "r") as f:
-        config = json.load(f) 
+        raw_config = json.load(f) 
     
     # Extract simulation parameters
-    sim_config = config.get("simulation", {})
+    sim_config = raw_config.get("simulation", {})
 
     # Parse epoch if present
     epoch_str = sim_config.get("epoch", None)
@@ -25,14 +25,14 @@ def parse_input(file_path: str) -> dict:
         sim_config["epoch"] = dateutil.parser.isoparse("2000-01-01T12:00:00Z")
 
     # Extract output parameters
-    output_config = config.get("output", {})
+    output_config = raw_config.get("output", {})
 
     # Extract propagator selection (default to 2BODY)
     propagator = sim_config.get("propagator", "2BODY").upper()
     sim_config["propagator"] = propagator  # store in sim_config for downstream use
 
     # Process satellites
-    satellites = config.get("satellites", [])
+    satellites = raw_config.get("satellites", [])
 
     # Separate chief and deputy
     chief = next(sat for sat in satellites if sat["name"].lower() == "chief")
@@ -138,7 +138,69 @@ def parse_input(file_path: str) -> dict:
         "simulation": sim_config  # includes propagator
     }
 
-    # GNC input: same as dynamics, plus any GNC-specific params
+    ## GNC inputs
+    guidance = raw_config.get("gnc", {}).get("guidance", {})
+    navigation = raw_config.get("gnc", {}).get("navigation", {})
+    control = raw_config.get("gnc", {}).get("control", {})
+
+    if guidance.get("type", "").upper() == "RPO":
+        rpo = guidance.get("rpo", {})
+        desired_state = rpo.get("deputy_desired_relative_state", [0,0,0,0,0,0])
+        frame = rpo.get("frame", "dOEs")
+
+    # Convert guidance desired state to LVLH/ RIC/ inertial as needed
+    if frame.upper() == "ECI":
+        deputy_r_des = desired_state[:3]
+        deputy_v_des = desired_state[3:]
+        # Convert to LVLH relative state
+        C_HN = LVLH_DCM(chief_r, chief_v)
+        deputy_rho_des = C_HN @ (deputy_r_des - chief_r)
+        omega = compute_omega(chief_r, chief_v)
+        deputy_rho_dot_des = C_HN @ (deputy_v_des - chief_v) - np.cross(omega, deputy_rho_des)
+
+    elif frame.upper() == "LVLH":
+        deputy_rho_des = desired_state[:3]
+        deputy_rho_dot_des = desired_state[3:]
+        deputy_r_des, deputy_v_des = rel_vector_to_inertial(deputy_rho_des, deputy_rho_dot_des, chief_r, chief_v)
+
+    elif frame.upper() == "LROES":
+        lroes = desired_state
+        deputy_r_des, deputy_v_des = lroes_to_inertial(0, chief_r, chief_v, lroes)
+        C_HN = LVLH_DCM(chief_r, chief_v)
+        deputy_rho_des = C_HN @ (deputy_r_des - chief_r)
+        omega = compute_omega(chief_r, chief_v)
+        deputy_rho_dot_des = C_HN @ (deputy_v_des - chief_v) - np.cross(omega, deputy_rho_des)
+
+    elif frame.upper() == "DOES":
+        # delta orbital elements
+        dOEs = desired_state
+        # Chief OEs
+        if chief_initial.get("frame", "").upper() == "OES":
+            a_chief, e_chief, i_chief, RAAN_chief, AOP_chief, TA_chief = chief_vector
+        else:
+            a_chief, e_chief, i_chief, RAAN_chief, AOP_chief, TA_chief = inertial_to_orbital_elements(chief_r, chief_v)
+
+        # Apply delta OEs
+        a_dep = a_chief + dOEs[0]
+        e_dep = e_chief + dOEs[1]
+        i_dep = i_chief + dOEs[2]
+        RAAN_dep = RAAN_chief + dOEs[3]
+        AOP_dep = AOP_chief + dOEs[4]
+        TA_dep = TA_chief + dOEs[5]
+
+        # Convert deputy OEs to inertial
+        deputy_r_des, deputy_v_des = orbital_elements_to_inertial(a_dep, e_dep, i_dep, RAAN_dep, AOP_dep, TA_dep)
+
+        # Convert to LVLH relative position and velocity
+        C_HN = LVLH_DCM(chief_r, chief_v)
+        deputy_rho_des = C_HN @ (deputy_r_des - chief_r)
+        omega = compute_omega(chief_r, chief_v)
+        deputy_rho_dot_des = C_HN @ (deputy_v_des - chief_v) - np.cross(omega, deputy_rho_des)
+
+    else:
+        raise ValueError(f"Guidance frame '{frame}' not supported for desired relative state.")
+
+    # GNC input dictionary
     gnc_input = {
         "trajectory": None,  # Will be filled after dynamics run
         "satellites": {
@@ -146,7 +208,15 @@ def parse_input(file_path: str) -> dict:
             "deputy": deputy
         },
         "simulation": sim_config,
-        "output": output_config
+        "output": output_config,
+        # Full guidance parameters
+        "desired_relative_state": {
+            "deputy_rho_des": deputy_rho_des,
+            "deputy_rho_dot_des": deputy_rho_dot_des
+        },
+        "guidance": raw_config.get("gnc", {}).get("guidance", {}),
+        "navigation": raw_config.get("gnc", {}).get("navigation", {}),
+        "control": raw_config.get("gnc", {}).get("control", {})
     }
 
     # Postprocess input: trajectory and GNC results
@@ -159,11 +229,12 @@ def parse_input(file_path: str) -> dict:
     }
 
     # Return all in a single config dict
-    config = {
+    config_out = {
+        "simulation": sim_config,
         "dynamics": dynamics_input,
         "gnc": gnc_input,
         "postprocess": postprocess_input,
-        "raw": config
+        "raw": raw_config  # stores the original full JSONX
     }
 
-    return config
+    return config_out

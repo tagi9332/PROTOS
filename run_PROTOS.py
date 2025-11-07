@@ -9,17 +9,17 @@ import numpy as np
 
 def main():
     # 1. Parse input
-    config = io_utils.parse_input("data/input_files/test_config_orbit_frame.jsonx")
+    config = io_utils.parse_input("data/input_files/test_config_gnc_rpo.jsonx")
+    sim_config = config["simulation"]
     dyn_config = config["dynamics"]
     gnc_config = config["gnc"]
 
     # Extract simulation parameters
-    sim = dyn_config.get("simulation", {})
-    dt = sim.get("time_step", 1) 
-    duration = sim.get("duration", 3600.0)
+    dt = sim_config.get("time_step", 1) 
+    duration = sim_config.get("duration", 3600.0)
     steps = int(duration / dt) + 1
     t_eval = np.linspace(0, duration, steps)
-    epoch = sim["epoch"]
+    epoch = sim_config["epoch"]
 
 
     # 2. Initialize state
@@ -39,21 +39,26 @@ def main():
 
     # 3. Time-stepped propagation loop
     for t in t_eval:
+        # (a) Run GNC first to compute commanded control input
+        gnc_out = gnc.step(state, gnc_config)
 
-        # Increment time
-        epoch += timedelta(seconds=dt)
-        state["epoch"] = epoch
-
-        # Propagate one step
-        next_state = dynamics.step(state, dt, dyn_config)
-        trajectory.append(next_state)
-
-        # Run GNC for this step
-        gnc_out = gnc.step(next_state, gnc_config)
+        # Store GNC output
         gnc_results.append(gnc_out)
 
-        # Update state for next step
-        state = next_state
+        # Add control acceleration to dynamics configuration or state
+        control_accel = gnc_out.get("accel_cmd", np.zeros(3))
+        state["control_accel"] = control_accel
+
+        # (b) Propagate dynamics using this control input
+        next_state = dynamics.step(state, dt, dyn_config)
+
+        # (c) Increment time and update state
+        epoch += timedelta(seconds=dt)
+        next_state["epoch"] = epoch
+
+        # (d) Store propagated state
+        trajectory.append(next_state)
+        state = next_state  # update for next iteration
 
     # 4. Prepare postprocess-compatible dictionaries
     post_dict = {}

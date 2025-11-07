@@ -1,44 +1,35 @@
+import numpy as np
+from src.controllers.lvlh_control import lvlh_step
+from src.controllers.oe_control import doe_step
+
 def step(state: dict, config: dict) -> dict:
     """
-    Placeholder GNC step.
-    Right now just echoes back the deputy state without modification.
+    Main GNC step. Chooses control mode and executes corresponding step.
     
-    state: dict with chief/deputy positions and velocities
-    config: GNC config dictionary (currently unused)
+    state: dictionary with chief/deputy inertial and relative states
+    config: dictionary containing GNC configuration
     
-    Returns a dictionary for this timestep.
+    Returns updated state dictionary including command acceleration.
     """
-    return {
-        "status": "pass-through",
-        "chief_r": state["chief_r"].tolist(),
-        "chief_v": state["chief_v"].tolist(),
-        "deputy_r": state["deputy_r"].tolist(),
-        "deputy_v": state["deputy_v"].tolist(),
-        "deputy_rho": state["deputy_rho"].tolist(),
-        "deputy_rho_dot": state["deputy_rho_dot"].tolist()
-    }
 
+    guidance_type = config.get("control", {}).get("control_method", "").upper()
 
-def run(trajectory: dict, config: dict) -> dict:
-    """
-    Backward-compatible wrapper for batch processing.
-    Calls step() on each trajectory point.
-    """
-    times = trajectory.get("time", [])
-    states = trajectory.get("state", [])
+    if guidance_type == "LVLH":      
+        if guidance_type == "OES":
+            return oe_step(state, config)
+        else:
+            # Default to LVLH
+            return lvlh_step(state, config)
 
-    results = []
-    for t, y in zip(times, states):
-        step_out = {
-            "t": t,
+    else:
+        # No guidance; pass-through
+        return {
             "status": "pass-through",
-            "state": y
+            "chief_r": state["chief_r"].tolist(),
+            "chief_v": state["chief_v"].tolist(),
+            "deputy_r": state["deputy_r"].tolist(),
+            "deputy_v": state["deputy_v"].tolist(),
+            "deputy_rho": state["deputy_rho"].tolist(),
+            "deputy_rho_dot": state["deputy_rho_dot"].tolist(),
+            "accel_cmd": [0,0,0]
         }
-        results.append(step_out)
-
-    return {
-        "status": "batch-pass-through",
-        "time": times,
-        "state": states,
-        "results": results
-    }

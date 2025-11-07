@@ -50,6 +50,11 @@ def step_2body(state: dict, dt: float, config: dict):
         r_mag = np.linalg.norm(r)
         a_total = -MU_EARTH * r / r_mag**3
         a_total += compute_perturb_accel(r, v, perturb_config, drag_properties, mass, epoch) # type: ignore
+
+        # Add control acceleration for deputy **Not ideal way to do this, but works for now**
+        if np.array_equal(r, deputy_r):
+            a_total += state.get("control_accel", np.zeros(3))
+
         return a_total
 
     # RK4 integration for chief
