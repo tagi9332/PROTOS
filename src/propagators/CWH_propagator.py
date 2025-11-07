@@ -36,7 +36,6 @@ def step_cwh(state: dict, dt: float, config: dict):
         "area": deputy_props.get("area", 1.0)
     }
 
-
     # Mean motion (assume circular chief orbit)
     r_mag = np.linalg.norm(chief_r)
     n = np.sqrt(MU_EARTH / r_mag**3)
@@ -49,40 +48,42 @@ def step_cwh(state: dict, dt: float, config: dict):
     ay = -2 * n * vx
     az = -n**2 * z
 
-    # Compute perturbation accelerations if enabled
-    # Chief perturbations
-    a_pert_chief_inertial = compute_perturb_accel(chief_r, chief_v, perturb_config, chief_drag_properties, chief_mass, epoch)
+    if perturb_config.get("J2", False) or perturb_config.get("drag", False) or perturb_config.get("SRP", False):
+        # Compute perturbation accelerations if enabled
+        # Chief perturbations
+        a_pert_chief_inertial = compute_perturb_accel(chief_r, chief_v, perturb_config, chief_drag_properties, chief_mass, epoch)
 
-    # Deputy perturbations
-    a_pert_deputy_inertial = compute_perturb_accel(deputy_r, deputy_v, perturb_config, deputy_drag_properties, deputy_mass, epoch)
+        # Deputy perturbations
+        a_pert_deputy_inertial = compute_perturb_accel(deputy_r, deputy_v, perturb_config, deputy_drag_properties, deputy_mass, epoch)
 
-    # Compute differential perturbation acceleration
-    a_diff_inertial = a_pert_deputy_inertial - a_pert_chief_inertial
+        # Compute differential perturbation acceleration
+        a_diff_inertial = a_pert_deputy_inertial - a_pert_chief_inertial
 
-    # Transform differential perturbation to LVLH frame
-    # Compute DCM from inertial to LVLH
-    C_HN = LVLH_DCM(chief_r, chief_v)
+        # Transform differential perturbation to LVLH frame
+        # Compute DCM from inertial to LVLH
+        C_HN = LVLH_DCM(chief_r, chief_v)
 
-    # Compute omega and omega_dot
-    h_chief = np.cross(chief_r, chief_v)
-    f_dot = h_chief / np.linalg.norm(chief_r)**2
-    f_ddot = -2 * np.dot(chief_v,[1,0,0]) / np.linalg.norm(chief_r) * f_dot
+        # Compute omega and omega_dot
+        h_chief = np.cross(chief_r, chief_v)
+        f_dot = h_chief / np.linalg.norm(chief_r)**2
+        f_ddot = -2 * np.dot(chief_v,[1,0,0]) / np.linalg.norm(chief_r) * f_dot
 
-    # Compute Coriolis acceleration correction
-    at1 = -2 * np.cross(f_dot, deputy_rho_dot)
+        # Compute Coriolis acceleration correction
+        at1 = -2 * np.cross(f_dot, deputy_rho_dot)
 
-    # Compute centrifugal acceleration correction
-    at2 = - np.cross(f_dot, np.cross(f_dot, deputy_rho))
+        # Compute centrifugal acceleration correction
+        at2 = - np.cross(f_dot, np.cross(f_dot, deputy_rho))
 
-    # Compute Euler acceleration correction
-    at3 = - np.cross(f_ddot, deputy_rho)
+        # Compute Euler acceleration correction
+        at3 = - np.cross(f_ddot, deputy_rho)
 
-    a_diff = C_HN @ a_diff_inertial + at1 + at2 + at3  # transform to LVLH
+        a_diff = C_HN @ a_diff_inertial + at1 + at2 + at3  # transform to LVLH
 
-    # Add differential perturbation to relative accelerations
-    ax += a_diff[0]
-    ay += a_diff[1]
-    az += a_diff[2]
+        # Add differential perturbation to relative accelerations
+        ax += a_diff[0]
+        ay += a_diff[1]
+        az += a_diff[2]
+
 
     # Euler integration of relative state for one step
     deputy_rho_next = deputy_rho + deputy_rho_dot * dt

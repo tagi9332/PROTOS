@@ -107,9 +107,11 @@ def postprocess(gnc_results: dict, output_dir: str):
             plt.title(title)
             plt.legend()
             plt.grid(True)
+            plt.axis('equal')  # Ensures equal scale for x and y axes
             plt.tight_layout()
             plt.savefig(os.path.join(output_dir, filename))
             plt.close()
+
 
         # -------------------------
         # Inertial ECI frame
