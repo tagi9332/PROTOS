@@ -19,6 +19,52 @@ def LVLH_DCM(r, v):
     return C_H_N
 
 
+def inertial_to_rel_LVLH(r_d, v_d, r_c, v_c):
+    """
+    Compute relative position and velocity in the Hill (RTN) frame.
+
+    Parameters
+    ----------
+    r_c : ndarray, shape (3,)
+        Chief position vector in ECI [km]
+    v_c : ndarray, shape (3,)
+        Chief velocity vector in ECI [km/s]
+    r_d : ndarray, shape (3,)
+        Deputy position vector in ECI [km]
+    v_d : ndarray, shape (3,)
+        Deputy velocity vector in ECI [km/s]
+
+    Returns
+    -------
+    rho_hill : ndarray, shape (3,)
+        Relative position vector in Hill frame [km]
+    rho_dot_hill : ndarray, shape (3,)
+        Relative velocity vector in Hill frame [km/s]
+    """
+
+    # --- Hill frame unit vectors (ECI basis) ---
+    r_hat = r_c / np.linalg.norm(r_c)
+    h_hat = np.cross(r_c, v_c)
+    h_hat /= np.linalg.norm(h_hat)
+    theta_hat = np.cross(h_hat, r_hat)
+
+    # Rotation matrix from ECI -> Hill
+    C_HI = np.vstack((r_hat, theta_hat, h_hat)).T
+
+    # --- Relative position and velocity in ECI ---
+    rho = r_d - r_c
+    drho = v_d - v_c
+
+    # Chief angular velocity in ECI
+    omega_HI = np.cross(r_c, v_c) / np.linalg.norm(r_c)**2
+
+    # --- Transform to Hill frame ---
+    rho_hill = C_HI.T @ rho
+    rho_dot_hill = C_HI.T @ (drho - np.cross(omega_HI, rho))
+
+    return rho_hill, rho_dot_hill
+
+
 def inertial_to_LVLH(r,v):
     """
     Transform a state from LVLH frame to inertial frame.

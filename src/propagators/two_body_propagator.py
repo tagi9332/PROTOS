@@ -50,11 +50,6 @@ def step_2body(state: dict, dt: float, config: dict):
         r_mag = np.linalg.norm(r)
         a_total = -MU_EARTH * r / r_mag**3
         a_total += compute_perturb_accel(r, v, perturb_config, drag_properties, mass, epoch) # type: ignore
-
-        # Add control acceleration for deputy **Not ideal way to do this, but works for now**
-        if np.array_equal(r, deputy_r):
-            a_total += state.get("control_accel", np.zeros(3))
-
         return a_total
 
     # RK4 integration for chief
@@ -74,16 +69,16 @@ def step_2body(state: dict, dt: float, config: dict):
     chief_v_next = chief_v + (k1_vc + 2*k2_vc + 2*k3_vc + k4_vc) / 6
 
     # RK4 integration for deputy
-    k1_vd = compute_accel(deputy_r, deputy_v, perturb_config, deputy_drag_properties, deputy_mass) * dt
+    k1_vd = (compute_accel(deputy_r, deputy_v, perturb_config, deputy_drag_properties, deputy_mass) + state.get("control_accel", np.zeros(3))) * dt
     k1_rd = deputy_v * dt
 
-    k2_vd = compute_accel(deputy_r + 0.5 * k1_rd, deputy_v + 0.5 * k1_vd, perturb_config, deputy_drag_properties, deputy_mass) * dt
+    k2_vd = (compute_accel(deputy_r, deputy_v, perturb_config, deputy_drag_properties, deputy_mass) + state.get("control_accel", np.zeros(3))) * dt
     k2_rd = (deputy_v + 0.5 * k1_vd) * dt
 
-    k3_vd = compute_accel(deputy_r + 0.5 * k2_rd, deputy_v + 0.5 * k2_vd, perturb_config, deputy_drag_properties, deputy_mass) * dt
+    k3_vd = (compute_accel(deputy_r, deputy_v, perturb_config, deputy_drag_properties, deputy_mass) + state.get("control_accel", np.zeros(3))) * dt
     k3_rd = (deputy_v + 0.5 * k2_vd) * dt
 
-    k4_vd = compute_accel(deputy_r + k3_rd, deputy_v + k3_vd, perturb_config, deputy_drag_properties, deputy_mass) * dt
+    k4_vd = (compute_accel(deputy_r, deputy_v, perturb_config, deputy_drag_properties, deputy_mass) + state.get("control_accel", np.zeros(3))) * dt
     k4_rd = (deputy_v + k3_vd) * dt
 
     deputy_r_next = deputy_r + (k1_rd + 2*k2_rd + 2*k3_rd + k4_rd) / 6

@@ -2,7 +2,7 @@ import commentjson as json  # instead of import json
 import dateutil
 import numpy as np
 
-from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial, LVLH_DCM, compute_omega
+from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial, LVLH_DCM, compute_omega, inertial_to_rel_LVLH
 from utils.orbital_element_conversions.oe_conversions import inertial_to_orbital_elements, orbital_elements_to_inertial, lroes_to_inertial
 
 def parse_input(file_path: str) -> dict:
@@ -110,11 +110,7 @@ def parse_input(file_path: str) -> dict:
         deputy_r, deputy_v = orbital_elements_to_inertial(a_dep, e_dep, i_dep, RAAN_dep, AOP_dep, TA_dep)
 
         # Convert to LVLH relative position and velocity
-        C_HN = LVLH_DCM(chief_r, chief_v)
-        deputy_rho = C_HN @ (deputy_r - chief_r)
-        omega = compute_omega(chief_r, chief_v)
-        deputy_rho_dot = C_HN @ (deputy_v - chief_v) - np.cross(omega, deputy_rho)
-
+        deputy_rho, deputy_rho_dot = inertial_to_rel_LVLH(deputy_r, deputy_v, chief_r, chief_v)
 
     elif frame == "RIC":
         # TODO: implement RIC to inertial conversion
@@ -148,28 +144,9 @@ def parse_input(file_path: str) -> dict:
         desired_state = rpo.get("deputy_desired_relative_state", [0,0,0,0,0,0])
         frame = rpo.get("frame", "dOEs")
 
-    # Convert guidance desired state to LVLH/ RIC/ inertial as needed
-    if frame.upper() == "ECI":
-        deputy_r_des = desired_state[:3]
-        deputy_v_des = desired_state[3:]
-        # Convert to LVLH relative state
-        C_HN = LVLH_DCM(chief_r, chief_v)
-        deputy_rho_des = C_HN @ (deputy_r_des - chief_r)
-        omega = compute_omega(chief_r, chief_v)
-        deputy_rho_dot_des = C_HN @ (deputy_v_des - chief_v) - np.cross(omega, deputy_rho_des)
-
-    elif frame.upper() == "LVLH":
+    if frame.upper() == "LVLH":
         deputy_rho_des = desired_state[:3]
         deputy_rho_dot_des = desired_state[3:]
-        deputy_r_des, deputy_v_des = rel_vector_to_inertial(deputy_rho_des, deputy_rho_dot_des, chief_r, chief_v)
-
-    elif frame.upper() == "LROES":
-        lroes = desired_state
-        deputy_r_des, deputy_v_des = lroes_to_inertial(0, chief_r, chief_v, lroes)
-        C_HN = LVLH_DCM(chief_r, chief_v)
-        deputy_rho_des = C_HN @ (deputy_r_des - chief_r)
-        omega = compute_omega(chief_r, chief_v)
-        deputy_rho_dot_des = C_HN @ (deputy_v_des - chief_v) - np.cross(omega, deputy_rho_des)
 
     elif frame.upper() == "DOES":
         # delta orbital elements
@@ -192,11 +169,7 @@ def parse_input(file_path: str) -> dict:
         deputy_r_des, deputy_v_des = orbital_elements_to_inertial(a_dep, e_dep, i_dep, RAAN_dep, AOP_dep, TA_dep)
 
         # Convert to LVLH relative position and velocity
-        C_HN = LVLH_DCM(chief_r, chief_v)
-        deputy_rho_des = C_HN @ (deputy_r_des - chief_r)
-        omega = compute_omega(chief_r, chief_v)
-        deputy_rho_dot_des = C_HN @ (deputy_v_des - chief_v) - np.cross(omega, deputy_rho_des)
-
+        deputy_rho_des, deputy_rho_dot_des = inertial_to_rel_LVLH(deputy_r_des, deputy_v_des, chief_r, chief_v)
     else:
         raise ValueError(f"Guidance frame '{frame}' not supported for desired relative state.")
 
