@@ -4,7 +4,7 @@
     "simulation": {
     "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC
     "duration": 4848,                  // seconds
-    "time_step": 1,                   // seconds
+    "time_step": 10,                   // seconds
     "propagator": "2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
     "perturbations": {
       "J2": false,
@@ -53,11 +53,10 @@
       }
     },
     "navigation": {
-      "type": "EKF"                    // options: NONE, EKF ** PLACEHOLDER **
+      "type": "EKF"                    // options: NONE, EKF ** PLACEHOLDER, does nothing **
     },
     "control": {
-      "control_method": "QUIZ_2",        // options: LVLH, OEs
-      "type": "PD",                    // options: NONE, PD
+      "control_method": "QUIZ_2",        // options: cartesian, mean_OEs
       "pd": {
         "Kp": 0.00002,                   // proportional gain
         "Kd": 0.005                     // derivative gain

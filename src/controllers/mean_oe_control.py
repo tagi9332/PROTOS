@@ -2,7 +2,7 @@ import numpy as np
 from utils.orbital_element_conversions.oe_conversions import inertial_to_orbital_elements, orbital_elements_to_inertial
 from utils.frame_convertions.rel_to_inertial_functions import LVLH_DCM, compute_omega
 
-def doe_step(state: dict, config: dict) -> dict:
+def mean_oe_step(state: dict, config: dict) -> dict:
     """
     Implements PD-type control using delta Orbital Elements (dOEs).
     Converts dOEs to LVLH relative position and velocity, then applies PD control.

@@ -71,27 +71,6 @@ def quiz_2_step(state: dict, config: dict) -> dict:
     # PD control
     u = -(f_d - f_dd) - Kp * delta_r - Kd * delta_r_dot
 
-    ## Pull from lookup table
-    # Get current simulation time
-    t = float(state['sim_time'])
-
-    # Load control accelerations from CSV (cache optional)
-    control_data = pd.read_csv("H:/tanne/Documents/PROTOS/src/controllers/control_accels.csv", header=None)
-    control_data.columns = ["time", "ax", "ay", "az"]
-
-    # Interpolate to get the acceleration at the current time
-    ax = np.interp(t, control_data["time"], control_data["ax"])
-    ay = np.interp(t, control_data["time"], control_data["ay"])
-    az = np.interp(t, control_data["time"], control_data["az"])
-
-    # Combine into a control acceleration vector
-    u_lookup = np.array([ax, ay, az])
-
-    # throw error if u_lookup is significantly different from u
-    if np.linalg.norm(u - u_lookup) > 1e-6:
-        raise ValueError(f"Computed control acceleration {u} differs significantly from lookup value {u_lookup} at time {t}.")
-
-
     # # Enforce saturation limit **TODO**
     # max_thrust = config.get("control", {}).get("max_thrust", None)  # in Newtons
     # if max_thrust is not None:
