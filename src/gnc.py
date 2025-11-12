@@ -1,7 +1,8 @@
 import numpy as np
 from src.controllers.cartesian_control import cartesian_step
-from controllers.mean_oe_control import mean_oe_step
+from src.controllers.mean_oe_control import mean_oe_step
 from src.controllers.quiz_2_controller import quiz_2_step
+from src.controllers.quiz_3_controller import quiz_3_step
 
 def step(state: dict, config: dict) -> dict:
     """
@@ -19,6 +20,8 @@ def step(state: dict, config: dict) -> dict:
         return mean_oe_step(state, config)       
     elif control_method == "QUIZ_2":     # Specific controller to complete Quiz 2
         return quiz_2_step(state, config)
+    elif control_method == "QUIZ_3":     # Specific controller to complete Quiz 3
+        return quiz_3_step(state, config)
     elif control_method == "cartesian":
         return cartesian_step(state, config)
 

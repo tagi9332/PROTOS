@@ -1,0 +1,75 @@
+{
+  "scenario": "Configuration for Quiz 2",
+  
+    "simulation": {
+    "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC
+    "duration": 4848,                  // seconds
+    "time_step": 10,                   // seconds
+    "propagator": "2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
+    "perturbations": {
+      "J2": false,
+      "drag": false,
+      "SRP": false
+    }
+  },
+
+"satellites": [
+    {
+      "name": "Chief",
+      "initial_state": {
+        "state": [8500,0.1,33,45,40,85], // km, km/s in ECI frame, degrees for OEs
+        "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])    
+        // "state": [8500,0.1,33,45,40,85], // km, km/s in ECI frame, degrees for OEs
+        // "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])   
+      },
+      "mass": 500.0,
+      "properties": {
+        "area": 10.0,
+        "Cd": 2.2
+      }
+    },
+    {
+      "name": "Deputy",
+      "initial_state": {
+        "state": [0,0.001176470588235294,0,0.06740679942715566,0,0], // km, km/s in ECI frame, degrees for OEs
+        "frame": "dOEs"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+        // "state": [5,0.04,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
+        // "frame": "LVLH"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+      },
+      "mass": 300.0,
+      "properties": {
+        "area": 10.0,
+        "Cd": 2.0
+      }
+    }
+  ],
+
+  "gnc": {
+    "guidance": {
+      "type": "RPO",                   // options: NONE, RPO
+      "rpo": {
+        "deputy_desired_relative_state": [0,-0.05,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
+        "frame": "LVLH"                 // options: LVLH, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+      }
+    },
+    "navigation": {
+      "type": "EKF"                    // options: NONE, EKF ** PLACEHOLDER, does nothing **
+    },
+    "control": {
+      "control_method": "QUIZ_2",        // options: cartesian, mean_OEs
+      "pd": {
+        "Kp": 0.00002,                   // proportional gain
+        "Kd": 0.005                     // derivative gain
+      },
+      "max_thrust": 5                   // maximum thrust in Newtons
+      }
+    },
+
+  "output": {
+    "save_trajectory": true,
+    "save_gnc_results": true,
+    "trajectory_file": "data/results/two_satellite_sim/trajectory.csv",
+    "gnc_file": "data/results/two_satellite_sim/gnc_results.csv",
+    "plots": true
+  }
+}

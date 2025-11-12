@@ -51,7 +51,7 @@ def parse_input(file_path: str) -> dict:
     elif frame == "OES":
         # Chief given in orbital elements vector [a, e, i, RAAN, AOP, TA]
         a, e, i, RAAN, AOP, TA = chief_vector
-        chief_r, chief_v = orbital_elements_to_inertial(a, e, i, RAAN, AOP, TA, mu=398600.4418)
+        chief_r, chief_v = orbital_elements_to_inertial(a, e, i, RAAN, AOP, TA, mu=398600.4418, units='deg')
 
     else:
             raise ValueError("Chief initial state must be either ECI or ORBITAL_ELEMENTS")
@@ -96,7 +96,7 @@ def parse_input(file_path: str) -> dict:
         if chief_initial.get("frame", "").upper() == "OES":
             a_chief, e_chief, i_chief, RAAN_chief, AOP_chief, TA_chief = chief_vector
         else:
-            a_chief, e_chief, i_chief, RAAN_chief, AOP_chief, TA_chief = inertial_to_orbital_elements(chief_r, chief_v)
+            a_chief, e_chief, i_chief, RAAN_chief, AOP_chief, TA_chief = inertial_to_orbital_elements(chief_r, chief_v, units='deg')
 
         # Apply delta OEs
         a_dep = a_chief + dOEs[0]
@@ -107,7 +107,7 @@ def parse_input(file_path: str) -> dict:
         TA_dep = TA_chief + dOEs[5]
 
         # Convert deputy OEs to inertial
-        deputy_r, deputy_v = orbital_elements_to_inertial(a_dep, e_dep, i_dep, RAAN_dep, AOP_dep, TA_dep)
+        deputy_r, deputy_v = orbital_elements_to_inertial(a_dep, e_dep, i_dep, RAAN_dep, AOP_dep, TA_dep, units='deg')
 
         # Convert to LVLH relative position and velocity
         deputy_rho, deputy_rho_dot = inertial_to_rel_LVLH(deputy_r, deputy_v, chief_r, chief_v)
@@ -160,12 +160,12 @@ def parse_input(file_path: str) -> dict:
                 if chief_initial.get("frame", "").upper() == "OES":
                     a_c, e_c, i_c, RAAN_c, AOP_c, TA_c = chief_vector
                 else:
-                    a_c, e_c, i_c, RAAN_c, AOP_c, TA_c = inertial_to_orbital_elements(chief_r, chief_v)
+                    a_c, e_c, i_c, RAAN_c, AOP_c, TA_c = inertial_to_orbital_elements(chief_r, chief_v, units='deg')
 
                 dOEs = desired_state
                 a_d, e_d, i_d = a_c + dOEs[0], e_c + dOEs[1], i_c + dOEs[2]
                 RAAN_d, AOP_d, TA_d = RAAN_c + dOEs[3], AOP_c + dOEs[4], TA_c + dOEs[5]
-                deputy_r_des, deputy_v_des = orbital_elements_to_inertial(a_d, e_d, i_d, RAAN_d, AOP_d, TA_d)
+                deputy_r_des, deputy_v_des = orbital_elements_to_inertial(a_d, e_d, i_d, RAAN_d, AOP_d, TA_d, units='deg')
                 deputy_rho_des, deputy_rho_dot_des = inertial_to_rel_LVLH(deputy_r_des, deputy_v_des, chief_r, chief_v)
     else:
         # No GNC section → create empty placeholders

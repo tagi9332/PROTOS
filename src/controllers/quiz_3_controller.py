@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial
-from utils.orbital_element_conversions.oe_conversions import orbital_elements_to_inertial, inertial_to_orbital_elements, m_to_ta, ta_to_m, rv_to_coe
+from utils.orbital_element_conversions.oe_conversions import orbital_elements_to_inertial, inertial_to_orbital_elements, m_to_ta, ta_to_m, rv_to_coe, lroes_to_inertial
 
 
 def grav_accel(r):
@@ -9,11 +9,13 @@ def grav_accel(r):
     r_mag = np.linalg.norm(r)
     return -MU_EARTH * r / r_mag**3
 
-def quiz_2_step(state: dict, config: dict) -> dict:
+def quiz_3_step(state: dict, config: dict) -> dict:
     """
     GNC step implementing u = -(f(r_d) - f(r_dd)) - K1*Δr - K2*Δr_dot
     Returns command acceleration in inertial frame for dynamics propagation.
     """
+    # Extract simulation time
+    sim_time = state.get("sim_time", 0.0)
 
     # Extract chief inertial position
     r_chief = np.array(state["chief_r"])
@@ -28,33 +30,17 @@ def quiz_2_step(state: dict, config: dict) -> dict:
     deputy_rho_dot = np.array(state["deputy_rho_dot"])
 
     # Guidance
-    # Commanded relative state in differential orbital elements for quiz 2
-    da_des = 0
-    de_des = 0
-    d_i_des = 0
-    d_RAAN_des = 0
-    d_AOP_des = 0
-    d_M_des = np.radians(0.1)  # deg
+    # Commanded linearized relative orbital elements for quiz 3
+    A_0 = 1.0  # km
+    B_0 = 2.0  # km
+    x_offset = 0  # km
+    y_offset = 0  # km
+    alpha = np.radians(0)  # radians
+    beta = np.radians(0)  # radians
 
-    # Get chief orbital elements
-    a_c, e_c, i_c, RAAN_c, AOP_c, TA_c = inertial_to_orbital_elements(r_chief, v_chief, units='deg')
-    
-    # Convert chief true anomaly to mean anomaly
-    M_c = ta_to_m(np.radians(TA_c), e_c)
-
-    # Compute desired deputy orbital elements
-    a_d_des = a_c + da_des
-    e_d_des = e_c + de_des
-    i_d_des = i_c + d_i_des
-    RAAN_d_des = RAAN_c + d_RAAN_des
-    AOP_d_des = AOP_c + d_AOP_des
-    M_d_des = M_c + d_M_des
-
-    # Convert desired deputy mean anomaly to true anomaly
-    TA_d_des = m_to_ta(M_d_des, e_d_des)
-
-    # Convert desired relative deputy state to inertial
-    r_deputy_des, v_deputy_des = orbital_elements_to_inertial(a_d_des, e_d_des, i_d_des, RAAN_d_des, AOP_d_des, np.degrees(TA_d_des), units='deg')
+    # Convert desired LROEs to desired inertial deputy state
+    lroes_des = [A_0, B_0, alpha, beta, x_offset, y_offset]
+    r_deputy_des, v_deputy_des = lroes_to_inertial(sim_time, r_chief, v_chief, lroes_des)
 
     # Get Kp and Kd from config (scalar or list), default to 1s
     Kp = config.get("control", {}).get("pd", {}).get("Kp", 1.0)

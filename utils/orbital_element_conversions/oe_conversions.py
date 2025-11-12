@@ -3,12 +3,13 @@ import numpy as np
 from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial
 from data.resources.constants import MU_EARTH
 
-def inertial_to_orbital_elements(R, V, mu=MU_EARTH):
+def inertial_to_orbital_elements(R, V, mu=MU_EARTH,units='rad'):
     """
     Convert inertial state vectors (R, V) to classical orbital elements.
     R: position vector (km)
     V: velocity vector (km/s)
     mu: gravitational parameter (km^3/s^2), default is Earth's
+    units: 'rad' for radians, 'deg' for degrees
 
     Returns: a, e, i, RAAN, AOP, TA (IN DEGREES)
     """
@@ -47,10 +48,13 @@ def inertial_to_orbital_elements(R, V, mu=MU_EARTH):
     # Semi-major axis
     a = 1 / ((2 / np.linalg.norm(R)) - (np.linalg.norm(V)**2 / mu))
 
-    return a, ecc, i, RAAN, AOP, TA
+    if units == 'deg':
+        return a, ecc, i, RAAN, AOP, TA
+    else:
+        return a, ecc, np.radians(i), np.radians(RAAN), np.radians(AOP), np.radians(TA)
 
 
-def orbital_elements_to_inertial(a, e, i, RAAN, AOP, TA, mu=MU_EARTH):
+def orbital_elements_to_inertial(a, e, i, RAAN, AOP, TA, mu=MU_EARTH, units='rad'):
     """
     Classical Orbital Elements -> inertial position/velocity.
 
@@ -62,18 +66,20 @@ def orbital_elements_to_inertial(a, e, i, RAAN, AOP, TA, mu=MU_EARTH):
         AOP  : argument of perigee ω [deg]
         TA    : true anomaly f [deg]
         mu    : gravitational parameter [km^3/s^2]
+        units : 'rad' for radians, 'deg' for degrees
 
     Returns:
         r : position vector in inertial frame [km]
         v : velocity vector in inertial frame [km/s]
     """
 
-    # Convert angles from degrees to radians
-    i = np.radians(i)
-    RAAN = np.radians(RAAN)
-    AOP = np.radians(AOP)
-    TA = np.radians(TA)
-
+    # Convert angles from degrees to radians if units is 'deg'
+    if units == 'deg':
+        i = np.radians(i)
+        RAAN = np.radians(RAAN)
+        AOP = np.radians(AOP)
+        TA = np.radians(TA)
+    
     # semi-latus rectum (works for elliptical & hyperbolic; not defined for parabolic e=1)
     if np.isclose(e, 1.0, atol=1e-12):
         raise ValueError("Parabolic case (e close to 1) not supported.")
@@ -125,10 +131,20 @@ def compute_mean_motion_from_ECI(r, v, mu=398600.4418):
     return n
 
 # Compute inertial state vector from LROEs
-def lroes_to_inertial(t, chief_r, chief_v, lroes, mu=398600.4418):
+def lroes_to_inertial(t, chief_r, chief_v, lroes, mu=MU_EARTH):
     """
     Convert LROEs to inertial state vectors (r, v) of the deputy.
 
+    Inputs:
+        t: time [s]
+        chief_r: chief inertial position vector [km]
+        chief_v: chief inertial velocity vector [km/s]
+        lroes: linear relative orbital elements [A_0, B_0, alpha, beta, x_offset, y_offset] in km and radians
+        mu: gravitational parameter [km^3/s^2]
+
+    Returns:
+        r_deputy: deputy inertial position vector [km]
+        v_deputy: deputy inertial velocity vector [km/s]
     """
     chief_r = np.array(chief_r)
     chief_v = np.array(chief_v)
