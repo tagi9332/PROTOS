@@ -9,7 +9,7 @@ import numpy as np
 
 def main():
     # Parse input
-    config = io_utils.parse_input("data/input_files/test_config_gnc_rpo.jsonx")
+    config = io_utils.parse_input("data/input_files/test_config_orbit_frame.jsonx")
     sim_config = config["simulation"]
     dyn_config = config["dynamics"]
     gnc_config = config["gnc"]

@@ -3,8 +3,8 @@
   
     "simulation": {
     "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC
-    "duration": 13000,                  // seconds
-    "time_step": 10,                   // seconds
+    "duration": 4000,                  // seconds
+    "time_step": 1,                   // seconds
     "propagator": "2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
     "perturbations": {
       "J2": false,
@@ -19,7 +19,7 @@
       "initial_state": {
         // "state": [6688.137000000006, 0.0, 0.0, 0.0, 7.671999999999998, 0.0], // km, km/s in ECI frame, degrees for OEs
         // "frame": "ECI"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])
-        "state": [6800,0,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
+        "state": [8500,0.2,53,55,40,0], // km, km/s in ECI frame, degrees for OEs
         "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])      
       },
       "mass": 500.0,
@@ -35,10 +35,10 @@
       // "frame": "LROEs"                 // options: LVLH, ECI, RIC, LROEs
       // "state": [-81.22301,248.14201,94.95904, 0.47884, 0.14857, 0.13577], // km, km/s in ECI frame, degrees for OEs
       // "frame": "LVLH"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
-      "state": [1.299038,-1.0000,0.3213938,-0.000844437,-0.00292521, -0.000431250], // km, km/s in ECI frame, degrees for OEs
-      "frame": "LVLH"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
-      // "state": [0,-3.57e-5,1.3736265e-5,0,0,3.7438745e-5], // km, km/s in ECI frame, degrees for OEs
-      // "frame": "dOEs"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+      // "state": [1.299038,-1.0000,0.3213938,-0.000844437,-0.00292521, -0.000431250], // km, km/s in ECI frame, degrees for OEs
+      // "frame": "LVLH"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+      "state": [0,0.001,0.1,0.1,0,0], // km, km/s in ECI frame, degrees for OEs
+      "frame": "dOEs"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
       // "state": [6688.137000000008, -2.0, 0.0, 0.0, 7.671999999999998, 0.0], // km, km/s in ECI frame, degrees for OEs
       // "frame": "ECI"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
       

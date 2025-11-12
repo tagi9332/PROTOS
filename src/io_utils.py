@@ -134,80 +134,69 @@ def parse_input(file_path: str) -> dict:
         "simulation": sim_config  # includes propagator
     }
 
-    ## GNC inputs
-    guidance = raw_config.get("gnc", {}).get("guidance", {})
-    navigation = raw_config.get("gnc", {}).get("navigation", {})
-    control = raw_config.get("gnc", {}).get("control", {})
+    # --- GNC Section Handling ---
+    gnc_section = raw_config.get("gnc", {})
 
-    if guidance.get("type", "").upper() == "RPO":
-        rpo = guidance.get("rpo", {})
-        desired_state = rpo.get("deputy_desired_relative_state", [0,0,0,0,0,0])
-        frame = rpo.get("frame", "dOEs")
+    # Default desired relative state (zeros)
+    deputy_rho_des = np.zeros(3)
+    deputy_rho_dot_des = np.zeros(3)
 
-    if frame.upper() == "LVLH":
-        deputy_rho_des = desired_state[:3]
-        deputy_rho_dot_des = desired_state[3:]
+    if gnc_section:
+        guidance = gnc_section.get("guidance", {})
+        navigation = gnc_section.get("navigation", {})
+        control = gnc_section.get("control", {})
 
-    elif frame.upper() == "DOES":
-        # delta orbital elements
-        dOEs = desired_state
-        # Chief OEs
-        if chief_initial.get("frame", "").upper() == "OES":
-            a_chief, e_chief, i_chief, RAAN_chief, AOP_chief, TA_chief = chief_vector
-        else:
-            a_chief, e_chief, i_chief, RAAN_chief, AOP_chief, TA_chief = inertial_to_orbital_elements(chief_r, chief_v)
+        # Parse desired state if guidance is RPO-type
+        if guidance.get("type", "").upper() == "RPO":
+            rpo = guidance.get("rpo", {})
+            desired_state = np.array(rpo.get("deputy_desired_relative_state", [0,0,0,0,0,0]))
+            frame = rpo.get("frame", "DOES").upper()
 
-        # Apply delta OEs
-        a_dep = a_chief + dOEs[0]
-        e_dep = e_chief + dOEs[1]
-        i_dep = i_chief + dOEs[2]
-        RAAN_dep = RAAN_chief + dOEs[3]
-        AOP_dep = AOP_chief + dOEs[4]
-        TA_dep = TA_chief + dOEs[5]
+            if frame == "LVLH":
+                deputy_rho_des = desired_state[:3]
+                deputy_rho_dot_des = desired_state[3:]
+            elif frame == "DOES":
+                # Compute desired relative from delta OEs
+                if chief_initial.get("frame", "").upper() == "OES":
+                    a_c, e_c, i_c, RAAN_c, AOP_c, TA_c = chief_vector
+                else:
+                    a_c, e_c, i_c, RAAN_c, AOP_c, TA_c = inertial_to_orbital_elements(chief_r, chief_v)
 
-        # Convert deputy OEs to inertial
-        deputy_r_des, deputy_v_des = orbital_elements_to_inertial(a_dep, e_dep, i_dep, RAAN_dep, AOP_dep, TA_dep)
-
-        # Convert to LVLH relative position and velocity
-        deputy_rho_des, deputy_rho_dot_des = inertial_to_rel_LVLH(deputy_r_des, deputy_v_des, chief_r, chief_v)
+                dOEs = desired_state
+                a_d, e_d, i_d = a_c + dOEs[0], e_c + dOEs[1], i_c + dOEs[2]
+                RAAN_d, AOP_d, TA_d = RAAN_c + dOEs[3], AOP_c + dOEs[4], TA_c + dOEs[5]
+                deputy_r_des, deputy_v_des = orbital_elements_to_inertial(a_d, e_d, i_d, RAAN_d, AOP_d, TA_d)
+                deputy_rho_des, deputy_rho_dot_des = inertial_to_rel_LVLH(deputy_r_des, deputy_v_des, chief_r, chief_v)
     else:
-        raise ValueError(f"Guidance frame '{frame}' not supported for desired relative state.")
+        # No GNC section → create empty placeholders
+        guidance, navigation, control = {}, {}, {}
 
-    # GNC input dictionary
     gnc_input = {
-        "trajectory": None,  # Will be filled after dynamics run
-        "satellites": {
-            "chief": chief,
-            "deputy": deputy
-        },
+        "trajectory": None,
+        "satellites": {"chief": chief, "deputy": deputy},
         "simulation": sim_config,
         "output": output_config,
-        # Full guidance parameters
         "desired_relative_state": {
             "deputy_rho_des": deputy_rho_des,
             "deputy_rho_dot_des": deputy_rho_dot_des
         },
-        "guidance": raw_config.get("gnc", {}).get("guidance", {}),
-        "navigation": raw_config.get("gnc", {}).get("navigation", {}),
-        "control": raw_config.get("gnc", {}).get("control", {})
+        "guidance": guidance,
+        "navigation": navigation,
+        "control": control
     }
 
-    # Postprocess input: trajectory and GNC results
-
+    # Postprocessing
     postprocess_input = {
         "trajectory_file": output_config.get("trajectory_file", "data/results/trajectory.csv"),
         "gnc_file": output_config.get("gnc_file", "data/results/gnc_results.csv"),
         "plots": output_config.get("plots", True),
-        "propagator": propagator  # pass propagator to postprocess
+        "propagator": propagator
     }
 
-    # Return all in a single config dict
-    config_out = {
+    return {
         "simulation": sim_config,
         "dynamics": dynamics_input,
         "gnc": gnc_input,
         "postprocess": postprocess_input,
-        "raw": raw_config  # stores the original full JSONX
+        "raw": raw_config
     }
-
-    return config_out
