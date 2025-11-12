@@ -50,6 +50,7 @@ def main():
         # Add control acceleration to dynamics configuration or state
         control_accel = gnc_out.get("accel_cmd", np.zeros(3))
         state["control_accel"] = control_accel
+        gnc_out["control_accel"] = control_accel
 
         # Propagate dynamics using control input
         next_state = dynamics.step(state, dt, dyn_config)
@@ -67,35 +68,36 @@ def main():
 
     # Execute and store final GNC step (not commanded)
     final_gnc = gnc.step(state, gnc_config)
+    final_gnc["control_accel"] = final_gnc.get("accel_cmd", np.zeros(3))
     gnc_results.append(final_gnc)
 
     # Prepare postprocess-compatible dictionaries
     post_dict = {}
 
     # Store the time array
-    post_dict["time"] = t_eval.tolist()
+    post_dict = {"time": t_eval.tolist(), "full_state": []}
 
     # Build the "full_state" list
-    full_state_list = []
+    control_accel_list = []
     for res in gnc_results:
-        # Collect all parts of the state vector into one array
+        # Build full state vector
         state_parts = [
-            res["chief_r"],        # Chief position
-            res["chief_v"],        # Chief velocity
-            res["deputy_r"],       # Deputy position
-            res["deputy_v"],       # Deputy velocity
-            res["deputy_rho"],     # Deputy relative position (maybe in LVLH/Hill frame)
-            res["deputy_rho_dot"], # Deputy relative velocity
+            res["chief_r"],
+            res["chief_v"],
+            res["deputy_r"],
+            res["deputy_v"],
+            res["deputy_rho"],
+            res["deputy_rho_dot"],
         ]
-        
-        # Stack them into a single 1D vector
         state_vector = np.hstack(state_parts)
+        post_dict["full_state"].append(state_vector.tolist())
 
-        # Convert to a regular Python list
-        full_state_list.append(state_vector.tolist())
+        # Collect control accelerations
+        control_accel = res["control_accel"]
+        control_accel_list.append(control_accel if isinstance(control_accel, list) else control_accel.tolist())
 
-    # Add to dictionary
-    post_dict["full_state"] = full_state_list
+    # Add control accelerations to post_dict for plotting or export
+    post_dict["control_accel"] = control_accel_list
 
     # Postprocess results
     postprocess.postprocess(post_dict, output_dir="data/results")

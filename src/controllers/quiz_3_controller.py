@@ -1,7 +1,5 @@
 import numpy as np
-import pandas as pd
-from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial
-from utils.orbital_element_conversions.oe_conversions import orbital_elements_to_inertial, inertial_to_orbital_elements, m_to_ta, ta_to_m, rv_to_coe, lroes_to_inertial
+from utils.orbital_element_conversions.oe_conversions import lroes_to_inertial
 
 
 def grav_accel(r):
@@ -56,6 +54,10 @@ def quiz_3_step(state: dict, config: dict) -> dict:
 
     # PD control
     u = -(f_d - f_dd) - Kp * delta_r - Kd * delta_r_dot
+
+    # Part 2: Add drag disturbance
+    a_drag = -0.00001 * v_deputy/np.linalg.norm(v_deputy)  # simple drag model
+    # u += a_drag
 
     # # Enforce saturation limit **TODO**
     # max_thrust = config.get("control", {}).get("max_thrust", None)  # in Newtons

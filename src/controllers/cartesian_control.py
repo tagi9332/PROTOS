@@ -1,6 +1,5 @@
 import numpy as np
-from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial
-from utils.orbital_element_conversions.oe_conversions import orbital_elements_to_inertial, inertial_to_orbital_elements
+from utils.frame_convertions.rel_to_inertial_functions import LVLH_DCM, rel_vector_to_inertial, compute_omega
 
 def grav_accel(r):
     MU_EARTH = 398600.4418  # km^3/s^2
@@ -9,7 +8,7 @@ def grav_accel(r):
 
 def cartesian_step(state: dict, config: dict) -> dict:
     """
-    GNC step implementing u = -(f(r_d) - f(r_dd)) - K1*Δr - K2*Δr_dot
+    GNC step implementing u = -(f(r_d) - f(r_dd)) - K1*Δr - K2*Δr_dot + u_d
     Returns command acceleration in inertial frame for dynamics propagation.
     """
 
@@ -25,13 +24,16 @@ def cartesian_step(state: dict, config: dict) -> dict:
     deputy_rho = np.array(state["deputy_rho"])
     deputy_rho_dot = np.array(state["deputy_rho_dot"])
 
-    # Guidance
-    rpo = config.get("guidance", {}).get("rpo", {})
-    desired = config.get("desired_relative_state", [0,0,0,0,0,0])
-    deputy_rho_des = desired.get("deputy_rho_des", np.zeros(3))
-    deputy_rho_dot_des = desired.get("deputy_rho_dot_des", np.zeros(3))
+    ## Guidance
+    # Extract desired relative position and velocity
+    desired_state = config.get("desired_relative_state", {})
+    deputy_rho_des = np.array(desired_state.get("deputy_rho_des", [0, 0, 0]))
+    deputy_rho_dot_des = np.array(desired_state.get("deputy_rho_dot_des", [0, 0, 0]))
 
-        # Get Kp and Kd from config (scalar or list), default to 1s
+    # Convert desired relative state to desired inertial deputy state
+    r_deputy_des, v_deputy_des = rel_vector_to_inertial(deputy_rho_des, deputy_rho_dot_des, r_chief, v_chief)
+
+    # Get Kp and Kd from config (scalar or list), default to 1s
     Kp = config.get("control", {}).get("pd", {}).get("Kp", 1.0)
     Kd = config.get("control", {}).get("pd", {}).get("Kd", 1.0)
 
@@ -39,21 +41,31 @@ def cartesian_step(state: dict, config: dict) -> dict:
     delta_r = r_deputy - r_deputy_des
     delta_r_dot = v_deputy - v_deputy_des
 
-    # Compute gravitational feedforeward terms
+    # Compute gravitational acceleration terms
     f_d = grav_accel(r_deputy)
     f_dd = grav_accel(r_deputy_des)
 
-    # PD control
-    u = -(f_d - f_dd) - Kp * delta_r - Kd * delta_r_dot
+    # Compute orbit frame to inertial transformation matrix
+    C_H_N = LVLH_DCM(r_chief, v_chief)
 
-    # # Enforce saturation limit **TODO**
-    # max_thrust = config.get("control", {}).get("max_thrust", None)  # in Newtons
-    # if max_thrust is not None:
-    #     mass = config.get("spacecraft", {}).get("deputy_mass", 1.0)  # in kg
-    #     max_accel = max_thrust / mass  # in km/s^2 assuming inputs in km/s^2
-    #     norm_u = np.linalg.norm(u)
-    #     if norm_u > max_accel:
-    #         u = (u / norm_u) * max_accel
+    # Compute omega
+    h = np.cross(r_chief, v_chief)
+    omega = h / np.linalg.norm(r_chief)**2
+    rdot = np.dot(r_chief, v_chief) / np.linalg.norm(r_chief)
+    omegadot = (-2 * rdot / np.linalg.norm(r_chief)**3) * h
+
+    # Compute inertial frame relative vectors
+    deputy_rho_I_des = C_H_N.T @ deputy_rho_des
+    deputy_rho_dot_I_des = C_H_N.T @ deputy_rho_dot_des + np.cross(omega, deputy_rho_I_des)
+
+    # Compute rho_ddot_I
+    rho_ddot_I = np.cross(omegadot, deputy_rho_I_des) + np.cross(omega, np.cross(omega, deputy_rho_I_des))
+
+    # Compute control feedforward terms
+    u_d = grav_accel(r_chief) - grav_accel(r_deputy_des) + rho_ddot_I
+
+    # PD control
+    u = -(f_d - f_dd) - Kp * delta_r - Kd * delta_r_dot + u_d
 
     # # Enforce saturation limit **TODO**
     # max_thrust = config.get("control", {}).get("max_thrust", None)  # in Newtons

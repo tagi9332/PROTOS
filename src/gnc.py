@@ -16,13 +16,13 @@ def step(state: dict, config: dict) -> dict:
 
     control_method = config.get("control", {}).get("control_method", "").upper()
 
-    if control_method == "mean_OES":  
+    if control_method == "MEAN_OES":  
         return mean_oe_step(state, config)       
     elif control_method == "QUIZ_2":     # Specific controller to complete Quiz 2
         return quiz_2_step(state, config)
     elif control_method == "QUIZ_3":     # Specific controller to complete Quiz 3
         return quiz_3_step(state, config)
-    elif control_method == "cartesian":
+    elif control_method == "CARTESIAN":
         return cartesian_step(state, config)
 
 

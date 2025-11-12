@@ -1,7 +1,5 @@
 import numpy as np
-import pandas as pd
-from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial
-from utils.orbital_element_conversions.oe_conversions import orbital_elements_to_inertial, inertial_to_orbital_elements, m_to_ta, ta_to_m, rv_to_coe
+from utils.orbital_element_conversions.oe_conversions import orbital_elements_to_inertial, inertial_to_orbital_elements, m_to_ta, ta_to_m
 
 
 def grav_accel(r):
