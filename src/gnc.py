@@ -1,6 +1,7 @@
 import numpy as np
 from src.controllers.lvlh_control import lvlh_step
 from src.controllers.oe_control import doe_step
+from src.controllers.quiz_2_controller import quiz_2_step
 
 def step(state: dict, config: dict) -> dict:
     """
@@ -12,14 +13,15 @@ def step(state: dict, config: dict) -> dict:
     Returns updated state dictionary including command acceleration.
     """
 
-    guidance_type = config.get("control", {}).get("control_method", "").upper()
+    control_method = config.get("control", {}).get("control_method", "").upper()
 
-    if guidance_type == "LVLH":      
-        if guidance_type == "OES":
-            return oe_step(state, config)
-        else:
-            # Default to LVLH
-            return lvlh_step(state, config)
+    if control_method == "OES":  
+        return oe_step(state, config)       
+    elif control_method == "QUIZ_2":     # Specific controller to complete Quiz 2
+        return quiz_2_step(state, config)
+    elif control_method == "LVLH":
+        return lvlh_step(state, config)
+
 
     else:
         # No guidance; pass-through

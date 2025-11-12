@@ -8,7 +8,7 @@ from src import io_utils, dynamics, gnc, postprocess
 import numpy as np
 
 def main():
-    # 1. Parse input
+    # Parse input
     config = io_utils.parse_input("data/input_files/test_config_gnc_rpo.jsonx")
     sim_config = config["simulation"]
     dyn_config = config["dynamics"]
@@ -19,12 +19,13 @@ def main():
     duration = sim_config.get("duration", 3600.0)
     steps = int(duration / dt) + 1
     t_eval = np.linspace(0, duration, steps)
-    epoch = sim_config["epoch"]
+    initial_epoch = dyn_config['simulation']['epoch']
 
 
-    # 2. Initialize state
+    # Initialize state
     state = {
-        "epoch": dyn_config.get("epoch"),
+        "sim_time": 0.0,
+        "epoch": initial_epoch,
         "chief_r": np.array(dyn_config["chief_r"]),
         "chief_v": np.array(dyn_config["chief_v"]),
         "deputy_r": np.array(dyn_config["deputy_r"]),
@@ -34,12 +35,13 @@ def main():
     }
 
     # Storage for trajectory and GNC outputs
-    trajectory = [state.copy()]
-    gnc_results = [gnc.step(state, gnc_config)]
+    trajectory = [state.copy()]  # store the initial state at t=0
+    gnc_results = []
 
-    # 3. Time-stepped propagation loop
-    for t in t_eval:
-        # (a) Run GNC first to compute commanded control input
+    # Time-stepped propagation loop
+    for i, t in enumerate(t_eval[:-1]):  # iterate over all but the last time
+
+        # Run GNC to compute commanded control input
         gnc_out = gnc.step(state, gnc_config)
 
         # Store GNC output
@@ -49,18 +51,25 @@ def main():
         control_accel = gnc_out.get("accel_cmd", np.zeros(3))
         state["control_accel"] = control_accel
 
-        # (b) Propagate dynamics using this control input
+        # Propagate dynamics using control input
         next_state = dynamics.step(state, dt, dyn_config)
 
-        # (c) Increment time and update state
-        epoch += timedelta(seconds=dt)
-        next_state["epoch"] = epoch
+        # Increment time and update state fields
+        prev_sim_time = state.get("sim_time", 0.0)
+        prev_epoch = state.get("epoch", initial_epoch)
 
-        # (d) Store propagated state
+        next_state["sim_time"] = np.float64(prev_sim_time + dt)
+        next_state["epoch"] = prev_epoch + timedelta(seconds=dt)
+
+        # Store propagated state and set it for next iteration
         trajectory.append(next_state)
-        state = next_state  # update for next iteration
+        state = next_state
 
-    # 4. Prepare postprocess-compatible dictionaries
+    # Execute and store final GNC step (not commanded)
+    final_gnc = gnc.step(state, gnc_config)
+    gnc_results.append(final_gnc)
+
+    # Prepare postprocess-compatible dictionaries
     post_dict = {}
 
     # Store the time array
@@ -82,14 +91,13 @@ def main():
         # Stack them into a single 1D vector
         state_vector = np.hstack(state_parts)
 
-        # Convert to a regular Python list (again for JSON serialization)
+        # Convert to a regular Python list
         full_state_list.append(state_vector.tolist())
 
     # Add to dictionary
     post_dict["full_state"] = full_state_list
 
-
-    # 5. Postprocess results (save JSON + plots)
+    # Postprocess results
     postprocess.postprocess(post_dict, output_dir="data/results")
 
 

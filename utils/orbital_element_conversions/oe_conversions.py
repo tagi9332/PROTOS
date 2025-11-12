@@ -163,3 +163,152 @@ def lroes_to_inertial(t, chief_r, chief_v, lroes, mu=398600.4418):
     deputy_r, deputy_v = rel_vector_to_inertial(deputy_rho, deputy_rho_dot, chief_r, chief_v) 
 
     return deputy_r, deputy_v
+
+
+def _wrap01(x):
+    # wrap to [0, 2π)
+    return np.mod(x, 2*np.pi)
+
+def ta_to_m(TA, e):
+    """
+    True anomaly -> Mean anomaly (elliptic 0<=e<1).
+    Handles scalar or ndarray TA. Returns M in [0,2π).
+    """
+    TA = np.atleast_1d(TA).astype(float)
+    # principal eccentric anomaly via atan2 form (robust)
+    # tan(E/2) = sqrt((1-e)/(1+e)) * tan(TA/2)
+    E = 2.0 * np.arctan2(np.sqrt(1.0 - e) * np.sin(TA/2.0),
+                         np.sqrt(1.0 + e) * np.cos(TA/2.0))
+    E = _wrap01(E)
+    M = E - e * np.sin(E)
+    M = _wrap01(M)
+    return M.squeeze()
+
+def m_to_ta(M, e, tol=1e-12, max_iter=100):
+    """
+    Mean anomaly -> True anomaly (elliptic 0<=e<1) using Newton-Raphson.
+    Returns TA in [0, 2π).
+    TA and E match the shape of input M (scalar or array).
+    """
+    M_in = np.atleast_1d(M).astype(float)
+    M_wrapped = _wrap01(M_in)
+
+    # initial guess for E
+    E = np.copy(M_wrapped)
+    # better guess for larger e
+    mask = (e >= 0.8)
+    if np.isscalar(E):
+        if e >= 0.8:
+            E = np.pi
+    else:
+        E[mask] = np.pi
+
+    # Newton-Raphson solve for E
+    for _ in range(max_iter):
+        f = E - e * np.sin(E) - M_wrapped
+        fprime = 1.0 - e * np.cos(E)
+        dE = f / fprime
+        E = E - dE
+        if np.max(np.abs(dE)) < tol:
+            break
+    else:
+        raise RuntimeError("Kepler solve did not converge")
+
+    E = _wrap01(E)
+    # convert E->TA robustly using atan2 form
+    sinv = np.sqrt(1.0 + e) * np.sin(E/2.0)
+    cosv = np.sqrt(1.0 - e) * np.cos(E/2.0)
+    TA = 2.0 * np.arctan2(sinv, cosv)
+    TA = _wrap01(TA)
+
+    # return shapes consistent with scalar input
+    if np.isscalar(M):
+        return float(TA.squeeze())
+    return TA.squeeze()
+
+
+
+
+
+#################################################
+
+def normalize_angle(angle):
+    """Wrap angle to [-pi, pi)."""
+    a = (angle + np.pi) % (2.0 * np.pi) - np.pi
+    return a
+
+
+def rv_to_coe(r, v, mu=MU_EARTH):
+    """
+    Inertial r,v -> classical orbital elements (a, e, i, RAAN, argp, nu, M, E)
+    Angles in radians. Returns tuple (a,e,i,RAAN,argp,nu,M,E)
+    """
+    r = np.array(r)
+    v = np.array(v)
+    r_norm = np.linalg.norm(r)
+    v_norm = np.linalg.norm(v)
+    h_vec = np.cross(r, v)
+    h_norm = np.linalg.norm(h_vec)
+    # node vector
+    k_hat = np.array([0.0, 0.0, 1.0])
+    n_vec = np.cross(k_hat, h_vec)
+    n_norm = np.linalg.norm(n_vec)
+
+    # eccentricity vector
+    e_vec = (1.0 / mu) * ((v_norm**2 - mu / r_norm) * r - np.dot(r, v) * v)
+    e = np.linalg.norm(e_vec)
+
+    # specific mechanical energy
+    eps = v_norm**2 / 2.0 - mu / r_norm
+    if abs(eps) < 1e-12:
+        a = np.inf
+    else:
+        a = -mu / (2.0 * eps)
+
+    # inclination
+    i = np.arccos(np.clip(h_vec[2] / h_norm, -1.0, 1.0))
+
+    # RAAN
+    if n_norm != 0:
+        RAAN = np.arctan2(n_vec[1], n_vec[0])
+    else:
+        RAAN = 0.0
+
+    # argument of perigee
+    if n_norm != 0 and e > 1e-12:
+        argp = np.arccos(np.clip(np.dot(n_vec, e_vec) / (n_norm * e), -1.0, 1.0))
+        if e_vec[2] < 0:
+            argp = -argp
+    else:
+        argp = 0.0
+
+    # true anomaly
+    if e > 1e-12:
+        nu = np.arccos(np.clip(np.dot(e_vec, r) / (e * r_norm), -1.0, 1.0))
+        if np.dot(r, v) < 0:
+            nu = 2.0 * np.pi - nu
+    else:
+        # circular: use angle between n_vec and r
+        if n_norm != 0:
+            nu = np.arccos(np.clip(np.dot(n_vec, r) / (n_norm * r_norm), -1.0, 1.0))
+            if r[2] < 0:
+                nu = 2.0 * np.pi - nu
+        else:
+            nu = 0.0
+
+    # eccentric anomaly E and mean anomaly M (for elliptical e<1)
+    if e < 1.0:
+        # compute E from true anomaly
+        E = 2.0 * np.arctan2(np.tan(nu / 2.0) * np.sqrt((1.0 - e) / (1.0 + e)), 1.0)
+        M = E - e * np.sin(E)
+        M = normalize_angle(M)
+    else:
+        E = None
+        M = None
+
+    # normalize angles
+    RAAN = normalize_angle(RAAN)
+    argp = normalize_angle(argp)
+    nu = normalize_angle(nu)
+
+    return a, e, i, RAAN, argp, nu, M, E

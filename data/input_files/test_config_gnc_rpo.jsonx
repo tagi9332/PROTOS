@@ -3,7 +3,7 @@
   
     "simulation": {
     "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC
-    "duration": 10000,                  // seconds
+    "duration": 4848,                  // seconds
     "time_step": 1,                   // seconds
     "propagator": "2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
     "perturbations": {
@@ -17,10 +17,10 @@
     {
       "name": "Chief",
       "initial_state": {
-        // "state": [8500,0.1,33,45,40,85], // km, km/s in ECI frame, degrees for OEs
-        // "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])    
         "state": [8500,0.1,33,45,40,85], // km, km/s in ECI frame, degrees for OEs
-        "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])   
+        "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])    
+        // "state": [8500,0.1,33,45,40,85], // km, km/s in ECI frame, degrees for OEs
+        // "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])   
       },
       "mass": 500.0,
       "properties": {
@@ -31,10 +31,10 @@
     {
       "name": "Deputy",
       "initial_state": {
-        // "state": [0,0.001176470588235294,0,0.06740679942715566,0,0], // km, km/s in ECI frame, degrees for OEs
-        // "frame": "dOEs"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
-        "state": [5,0.04,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
-        "frame": "LVLH"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+        "state": [0,0.001176470588235294,0,0.06740679942715566,0,0], // km, km/s in ECI frame, degrees for OEs
+        "frame": "dOEs"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+        // "state": [5,0.04,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
+        // "frame": "LVLH"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
       },
       "mass": 300.0,
       "properties": {
@@ -56,7 +56,7 @@
       "type": "EKF"                    // options: NONE, EKF ** PLACEHOLDER **
     },
     "control": {
-      "control_method": "LVLH",        // options: LVLH, OEs
+      "control_method": "QUIZ_2",        // options: LVLH, OEs
       "type": "PD",                    // options: NONE, PD
       "pd": {
         "Kp": 0.00002,                   // proportional gain

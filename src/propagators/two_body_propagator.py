@@ -27,6 +27,9 @@ def step_2body(state: dict, dt: float, config: dict):
     chief_props = sat_props.get("chief", {})
     deputy_props = sat_props.get("deputy", {})
 
+    # Get control accelerations
+    u_ctrl = state.get("control_accel", np.zeros(3))
+
     # Masses (TODO: Not currently working, default to 250kg and 500kg)
     chief_mass = config.get("satellites", {}).get("chief", {}).get("mass", 250.0)
     deputy_mass = config.get("satellites", {}).get("deputy", {}).get("mass", 500.0)
@@ -69,20 +72,20 @@ def step_2body(state: dict, dt: float, config: dict):
     chief_v_next = chief_v + (k1_vc + 2*k2_vc + 2*k3_vc + k4_vc) / 6
 
     # RK4 integration for deputy
-    k1_vd = (compute_accel(deputy_r, deputy_v, perturb_config, deputy_drag_properties, deputy_mass) + state.get("control_accel", np.zeros(3))) * dt
+    k1_vd = (compute_accel(deputy_r, deputy_v, perturb_config, deputy_drag_properties, deputy_mass) + u_ctrl) * dt
     k1_rd = deputy_v * dt
 
-    k2_vd = (compute_accel(deputy_r, deputy_v, perturb_config, deputy_drag_properties, deputy_mass) + state.get("control_accel", np.zeros(3))) * dt
+    k2_vd = (compute_accel(deputy_r + 0.5 * k1_rd, deputy_v + 0.5 * k1_vd, perturb_config, deputy_drag_properties, deputy_mass) + u_ctrl) * dt
     k2_rd = (deputy_v + 0.5 * k1_vd) * dt
 
-    k3_vd = (compute_accel(deputy_r, deputy_v, perturb_config, deputy_drag_properties, deputy_mass) + state.get("control_accel", np.zeros(3))) * dt
+    k3_vd = (compute_accel(deputy_r + 0.5 * k2_rd, deputy_v + 0.5 * k2_vd, perturb_config, deputy_drag_properties, deputy_mass) + u_ctrl) * dt
     k3_rd = (deputy_v + 0.5 * k2_vd) * dt
 
-    k4_vd = (compute_accel(deputy_r, deputy_v, perturb_config, deputy_drag_properties, deputy_mass) + state.get("control_accel", np.zeros(3))) * dt
+    k4_vd = (compute_accel(deputy_r + k3_rd, deputy_v + k3_vd, perturb_config, deputy_drag_properties, deputy_mass) + u_ctrl) * dt
     k4_rd = (deputy_v + k3_vd) * dt
 
-    deputy_r_next = deputy_r + (k1_rd + 2*k2_rd + 2*k3_rd + k4_rd) / 6
-    deputy_v_next = deputy_v + (k1_vd + 2*k2_vd + 2*k3_vd + k4_vd) / 6
+    deputy_r_next = deputy_r + (k1_rd + 2*k2_rd + 2*k3_rd + k4_rd) / 6.0
+    deputy_v_next = deputy_v + (k1_vd + 2*k2_vd + 2*k3_vd + k4_vd) / 6.0
 
     # Compute updated relative state in LVLH frame
     C_HN = LVLH_DCM(chief_r_next, chief_v_next) 
