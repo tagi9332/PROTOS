@@ -51,10 +51,10 @@ def step_cwh(state: dict, dt: float, config: dict):
     if perturb_config.get("J2", False) or perturb_config.get("drag", False) or perturb_config.get("SRP", False):
         # Compute perturbation accelerations if enabled
         # Chief perturbations
-        a_pert_chief_inertial = compute_perturb_accel(chief_r, chief_v, perturb_config, chief_drag_properties, chief_mass, epoch)
+        a_pert_chief_inertial = compute_perturb_accel(chief_r, chief_v, perturb_config, chief_drag_properties, chief_mass, epoch) # type: ignore
 
         # Deputy perturbations
-        a_pert_deputy_inertial = compute_perturb_accel(deputy_r, deputy_v, perturb_config, deputy_drag_properties, deputy_mass, epoch)
+        a_pert_deputy_inertial = compute_perturb_accel(deputy_r, deputy_v, perturb_config, deputy_drag_properties, deputy_mass, epoch) # type: ignore
 
         # Compute differential perturbation acceleration
         a_diff_inertial = a_pert_deputy_inertial - a_pert_chief_inertial
@@ -84,6 +84,13 @@ def step_cwh(state: dict, dt: float, config: dict):
         ay += a_diff[1]
         az += a_diff[2]
 
+    # Add control acceleration if present
+    control_accel = state.get("control_accel", np.zeros(3))
+
+    # Add control acceleration to relative accelerations
+    ax += control_accel[0]
+    ay += control_accel[1]
+    az += control_accel[2]
 
     # Euler integration of relative state for one step
     deputy_rho_next = deputy_rho + deputy_rho_dot * dt

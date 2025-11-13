@@ -56,14 +56,3 @@ def rho_expo_model(alts):
         rhos[i] = rhob[ind] * np.exp(-(z - zb[ind]) / ZS[ind])
 
     return rhos
-
-def main():
-    # Altitudes from 0km to 1000km, 1,000,000 points look up table
-    altitudes = np.linspace(0, 1000, 10**6)
-    densities = rho_expo_model(altitudes)
-
-    df = pd.DataFrame({'Altitude_km': altitudes, 'Density_kg_m3': densities})
-    df.to_csv('atmosphere_density_table.csv', index=False, float_format="%.6e")
-    return df.head(), df.tail()
-
-main_results = main()

@@ -143,7 +143,7 @@ def postprocess(results: dict, output_dir: str):
         print("No control acceleration data found in results. Skipping control_accel.csv export.")
 
     # ---------------------------------
-    # Plot Trajectories (existing section)
+    # Plot Trajectories
     # ---------------------------------
     def plot_trajectories(results_serializable, output_dir):
         # Extract time and states
@@ -241,70 +241,6 @@ def postprocess(results: dict, output_dir: str):
         print(f"RIC and ECI trajectory plots saved in {output_dir}")
 
     plot_trajectories(results_serializable, output_dir)
-
-
-    def plot_hill_frame_trajectory(results_serializable, output_dir, show_plot=True):
-        """
-        Generate a 3D plot of the deputy's relative position in the chief's Hill frame over time.
-        Saves a PNG to output_dir.
-        """
-
-        os.makedirs(output_dir, exist_ok=True)
-
-        states = np.array(results_serializable.get("full_state", []), dtype=float)
-        if len(states) == 0:
-            print("No trajectory data available for Hill-frame plot. Skipping.")
-            return
-
-        relative_positions = states[:, 12:15]  # deputy_rho
-        chief_positions = states[:, 0:3]       # chief inertial
-
-        # Initialize array for Hill-frame relative positions
-        relative_positions_H = np.zeros_like(relative_positions)
-
-        for k in range(len(relative_positions)):
-            r_c = chief_positions[k]
-            v_c = states[k, 3:6]
-            R_hill = LVLH_DCM(r_c, v_c)  # inertial -> Hill
-            relative_positions_H[k] = R_hill @ relative_positions[k]
-
-        # 3D plot
-        fig = plt.figure(figsize=(10, 8))
-        ax = fig.add_subplot(111, projection='3d')
-
-        ax.plot(
-            relative_positions_H[:, 0],  # radial
-            relative_positions_H[:, 1],  # along-track
-            relative_positions_H[:, 2],  # cross-track
-            label='Deputy Trajectory', color='blue', linewidth=1.5
-        )
-        # Start and end markers
-        ax.scatter([relative_positions_H[0, 0]], [relative_positions_H[0, 1]], [relative_positions_H[0, 2]], # type: ignore
-                color='green', s=60, label='Start') # type: ignore
-        ax.scatter([relative_positions_H[-1, 0]], [relative_positions_H[-1, 1]], [relative_positions_H[-1, 2]], # type: ignore
-                color='black', s=60, label='End') # type: ignore
-        # Chief origin
-        ax.scatter([0], [0], [0], color='red', s=60, label='Chief (origin)') # type: ignore
-
-        ax.set_xlabel("Radial (x) [km]")
-        ax.set_ylabel("Along-track (y) [km]")
-        ax.set_zlabel("Cross-track (z) [km]") # type: ignore
-        ax.set_title("Deputy Relative Motion in Chief's Hill Frame")
-        ax.legend()
-        ax.grid(True)
-        ax.view_init(elev=20, azim=-60) # type: ignore
-        ax.set_box_aspect([1, 1, 1])  # type: ignore # equal aspect
-
-        # Show interactive window if requested
-        if show_plot:
-            plt.show()
-
-        plt.close()
-
-    # Call the function inside postprocess
-    plot_hill_frame_trajectory(results_serializable, output_dir)
-
-
 
     # ---------------------------------
     # Plot Control Accelerations
@@ -427,3 +363,67 @@ def postprocess(results: dict, output_dir: str):
 
     else:
         print("No orbital_elements.csv found. Skipping orbital element plots.")
+
+
+    def plot_hill_frame_trajectory(results_serializable, output_dir, show_plot=True):
+        """
+        Generate a 3D plot of the deputy's relative position in the chief's Hill frame over time.
+        Saves a PNG to output_dir.
+        """
+
+        os.makedirs(output_dir, exist_ok=True)
+
+        states = np.array(results_serializable.get("full_state", []), dtype=float)
+        if len(states) == 0:
+            print("No trajectory data available for Hill-frame plot. Skipping.")
+            return
+
+        relative_positions = states[:, 12:15]  # deputy_rho
+        chief_positions = states[:, 0:3]       # chief inertial
+
+        # Initialize array for Hill-frame relative positions
+        relative_positions_H = np.zeros_like(relative_positions)
+
+        for k in range(len(relative_positions)):
+            r_c = chief_positions[k]
+            v_c = states[k, 3:6]
+            R_hill = LVLH_DCM(r_c, v_c)  # inertial -> Hill
+            relative_positions_H[k] = R_hill @ relative_positions[k]
+
+        # 3D plot
+        fig = plt.figure(figsize=(10, 8))
+        ax = fig.add_subplot(111, projection='3d')
+
+        ax.plot(
+            relative_positions_H[:, 0],  # radial
+            relative_positions_H[:, 1],  # along-track
+            relative_positions_H[:, 2],  # cross-track
+            label='Deputy Trajectory', color='blue', linewidth=1.5
+        )
+        # Start and end markers
+        ax.scatter([relative_positions_H[0, 0]], [relative_positions_H[0, 1]], [relative_positions_H[0, 2]], # type: ignore
+                color='green', s=60, label='Start') # type: ignore
+        ax.scatter([relative_positions_H[-1, 0]], [relative_positions_H[-1, 1]], [relative_positions_H[-1, 2]], # type: ignore
+                color='black', s=60, label='End') # type: ignore
+        # Chief origin
+        ax.scatter([0], [0], [0], color='red', s=60, label='Chief (origin)') # type: ignore
+
+        ax.set_xlabel("Radial (x) [km]")
+        ax.set_ylabel("Along-track (y) [km]")
+        ax.set_zlabel("Cross-track (z) [km]") # type: ignore
+        ax.set_title("Deputy Relative Motion in Chief's Hill Frame")
+        ax.legend()
+        ax.grid(True)
+        ax.view_init(elev=20, azim=-60) # type: ignore
+        ax.set_box_aspect([1, 1, 1])  # type: ignore # equal aspect
+
+        # Show interactive window if requested
+        if show_plot:
+            plt.show()
+
+        plt.close()
+
+    # Call the function inside postprocess
+    plot_hill_frame_trajectory(results_serializable, output_dir)
+
+
