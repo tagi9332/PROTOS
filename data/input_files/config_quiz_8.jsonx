@@ -3,8 +3,8 @@
   
     "simulation": {
     "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC
-    "duration": 4848,                  // seconds
-    "time_step": 0.5,                   // seconds
+    "duration": 7800,                  // seconds
+    "time_step": 1,                   // seconds
     "propagator": "2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
     "perturbations": {
       "J2": false,
@@ -29,7 +29,7 @@
     {
       "name": "Deputy",
       "initial_state": {
-        "state": [1,0.001,0.1,0.1,0], // km, km/s in ECI frame, degrees for OEs
+        "state": [1,0.001,0.1,0.1,0,0], // km, km/s in ECI frame, degrees for OEs
         "frame": "dOEs"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
         // "state": [5,0.04,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
         // "frame": "LVLH"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
@@ -54,7 +54,7 @@
       "type": "EKF"                    // options: NONE, EKF ** PLACEHOLDER, does nothing **
     },
     "control": {
-      "control_method": "cartesian",        // options: cartesian, mean_OEs
+      "control_method": "QUIZ_8",        // options: cartesian, mean_OEs
       "pd": {
         "Kp": 0.00002,                   // proportional gain
         "Kd": 0.005                     // derivative gain
