@@ -30,8 +30,8 @@ Key Features
   * LROEs (Linearized Relative Orbital Elements)
 - Perturbations (toggleable):
   * J2
-  * Drag (!TODO!)
-  * Solar radiation pressure (!TODO!)
+  * Drag
+  * Solar radiation pressure
 - Postprocessing:
   * Export trajectory and GNC results to CSV
   * Generate trajectory plots in RIC (Radial, In-track, Cross-track)
@@ -46,6 +46,7 @@ Repository Structure
   - gnc.py           : Placeholder GNC logic
   - postprocess.py   : Data saving and plotting utilities
   - propagators/     : Collection of propagation models
+  - controllers/     : Selectible GNC control methods
   - utils/           : Utility functions for frame and orbital conversions
 - data/
   - input_files/     : Example JSONX configuration files

@@ -1,7 +1,6 @@
-import commentjson as json  # instead of import json
+import commentjson as json
 import dateutil
 import numpy as np
-
 from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial, LVLH_DCM, compute_omega, inertial_to_rel_LVLH
 from utils.orbital_element_conversions.oe_conversions import inertial_to_orbital_elements, orbital_elements_to_inertial, lroes_to_inertial
 

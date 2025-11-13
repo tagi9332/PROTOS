@@ -45,20 +45,25 @@ def cartesian_step(state: dict, config: dict) -> dict:
     f_d = grav_accel(r_deputy)
     f_dd = grav_accel(r_deputy_des)
 
-    # Compute orbit frame to inertial transformation matrix
+    # Compute DCM from the LVLH (orbit) frame to the inertial frame
     C_H_N = LVLH_DCM(r_chief, v_chief)
 
-    # Compute omega
+    # Compute the chief satellite's specific angular momentum vector
     h = np.cross(r_chief, v_chief)
+
+    # Compute the LVLH frame angular velocity vector in inertial coordinates
     omega = h / np.linalg.norm(r_chief)**2
+
+    # Compute the radial velocity of the chief
     rdot = np.dot(r_chief, v_chief) / np.linalg.norm(r_chief)
+
+    # Compute the time derivative of the LVLH angular velocity (frame acceleration)
     omegadot = (-2 * rdot / np.linalg.norm(r_chief)**3) * h
 
-    # Compute inertial frame relative vectors
+    # Transform the desired relative position from LVLH to inertial frame
     deputy_rho_I_des = C_H_N.T @ deputy_rho_des
-    deputy_rho_dot_I_des = C_H_N.T @ deputy_rho_dot_des + np.cross(omega, deputy_rho_I_des)
 
-    # Compute rho_ddot_I
+    # Compute the inertial acceleration contribution due to LVLH frame rotation
     rho_ddot_I = np.cross(omegadot, deputy_rho_I_des) + np.cross(omega, np.cross(omega, deputy_rho_I_des))
 
     # Compute control feedforward terms

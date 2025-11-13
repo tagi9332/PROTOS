@@ -1,4 +1,3 @@
-import numpy as np
 from src.controllers.cartesian_control import cartesian_step
 from src.controllers.mean_oe_control import mean_oe_step
 from src.controllers.quiz_2_controller import quiz_2_step
