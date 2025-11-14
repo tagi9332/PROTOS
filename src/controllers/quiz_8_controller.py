@@ -2,6 +2,7 @@
 
 import numpy as np
 from utils.orbital_element_conversions.oe_conversions import inertial_to_orbital_elements
+from utils.frame_convertions.rel_to_inertial_functions import LVLH_DCM
 
 def quiz_8_step(state: dict, config: dict) -> dict:
     """
@@ -35,35 +36,14 @@ def quiz_8_step(state: dict, config: dict) -> dict:
     del_e_desired = 0.0005
     del_oe_desired = np.array([del_a_desired, del_e_desired])
 
-    # Define A Matrix
-    # def A_matrix(a_d, e_d):
-    #     from data.resources.constants import R_EARTH as r_e, MU_EARTH as mu_e
-        
-    #     # Compute parameters
-    #     p = a_d * (1 - e_d**2)
-    #     h = np.sqrt(mu_e * p)  # Earth's mu in km^3/s^2
-
-    #     # Only controlling a and e, outputs for radial and along-track
-    #     A = np.array([
-    #         [2*a_d*e_d/h*r_e, 2*a_d**2/h*r_e],
-    #         [e_d/h, 2*a_d/h],
-    #     ])
-    #     return A
-
     # Define [B] matrix for chosen orbit
     def B_matrix(a_d, e_d, TA):
-        from data.resources.constants import R_EARTH as r_e, MU_EARTH as mu_e
+        from data.resources.constants import MU_EARTH as mu_e
           
         # Compute parameters
         p = a_d * (1 - e_d**2)
         h = np.sqrt(mu_e * p)  # Earth's mu in km^3/s^2
         r = p / (1 + e_d * np.cos(TA))
-
-        # # Only controlling a and e, inputs for radial and along-track
-        # B = np.array([
-        #     [2*a_d**2*e_d*np.sin(TA)/(h*r_e), 2*a_d**2*p/(h*r*r_e), 0],
-        #     [p*np.sin(TA)/h, (p+r)*np.cos(TA)+r*e_d/h, 0],
-        # ])
 
         # Only controlling a and e, inputs for radial and along-track
         B = np.array([
@@ -84,6 +64,12 @@ def quiz_8_step(state: dict, config: dict) -> dict:
 
     # PD control
     u = np.linalg.pinv(B) @ (-Kp @ delta_oe)
+
+    # Compute DCM from LVLH to inertial
+    C_H_N = LVLH_DCM(r_deputy, v_deputy)
+
+    # Transform command acceleration to inertial frame
+    u = C_H_N.T @ u  # from LVLH to inertial
 
     # # Enforce saturation limit **TODO**
     # max_thrust = config.get("control", {}).get("max_thrust", None)  # in Newtons

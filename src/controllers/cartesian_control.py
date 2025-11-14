@@ -1,10 +1,6 @@
 import numpy as np
-from utils.frame_convertions.rel_to_inertial_functions import LVLH_DCM, rel_vector_to_inertial, compute_omega
-
-def grav_accel(r):
-    MU_EARTH = 398600.4418  # km^3/s^2
-    r_mag = np.linalg.norm(r)
-    return -MU_EARTH * r / r_mag**3
+from utils.frame_convertions.rel_to_inertial_functions import LVLH_DCM, rel_vector_to_inertial
+from utils.orbital_dynamics.orbital_accel import grav_accel
 
 def cartesian_step(state: dict, config: dict) -> dict:
     """
@@ -41,7 +37,7 @@ def cartesian_step(state: dict, config: dict) -> dict:
     delta_r = r_deputy - r_deputy_des
     delta_r_dot = v_deputy - v_deputy_des
 
-    # Compute gravitational acceleration terms
+    # Compute gravitational acceleration error
     f_d = grav_accel(r_deputy)
     f_dd = grav_accel(r_deputy_des)
 

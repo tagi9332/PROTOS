@@ -1,5 +1,4 @@
 import numpy as np
-
 from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial
 from data.resources.constants import MU_EARTH
 
@@ -52,7 +51,6 @@ def inertial_to_orbital_elements(R, V, mu=MU_EARTH,units='rad'):
         return a, ecc, i, RAAN, AOP, TA
     else:
         return a, ecc, np.radians(i), np.radians(RAAN), np.radians(AOP), np.radians(TA)
-
 
 def orbital_elements_to_inertial(a, e, i, RAAN, AOP, TA, mu=MU_EARTH, units='rad'):
     """

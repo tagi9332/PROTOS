@@ -3,6 +3,8 @@ from src.controllers.mean_oe_control import mean_oe_step
 from src.controllers.quiz_2_controller import quiz_2_step
 from src.controllers.quiz_3_controller import quiz_3_step
 from src.controllers.quiz_8_controller import quiz_8_step
+from src.controllers.quiz_10_controller import quiz_10_step
+
 
 def step(state: dict, config: dict) -> dict:
     """
@@ -24,6 +26,8 @@ def step(state: dict, config: dict) -> dict:
         return quiz_3_step(state, config)
     elif control_method == "QUIZ_8":     # Specific controller to complete Quiz 8
         return quiz_8_step(state, config)
+    elif control_method == "QUIZ_10":     # Specific controller to complete Quiz 10
+        return quiz_10_step(state, config)
     elif control_method == "CARTESIAN":
         return cartesian_step(state, config)
 
