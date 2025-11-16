@@ -1,7 +1,7 @@
 ## CWH relative motion propagator
 import numpy as np
 from src.propagators.perturbation_accel import compute_perturb_accel
-from utils.frame_convertions.rel_to_inertial_functions import LVLH_DCM, rel_vector_to_inertial
+from utils.frame_conversions.rel_to_inertial_functions import LVLH_DCM, rel_vector_to_inertial
 from data.resources.constants import MU_EARTH
 
 def step_cwh(state: dict, dt: float, config: dict):

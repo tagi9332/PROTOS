@@ -4,7 +4,7 @@
     "simulation": {
     "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC
     "duration": 4848,                  // seconds
-    "time_step": 10,                   // seconds
+    "time_step": 1,                   // seconds
     "propagator": "2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
     "perturbations": {
       "J2": false,

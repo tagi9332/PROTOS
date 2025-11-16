@@ -2,13 +2,15 @@
 """
 Main entry point for PROTOS simulation framework.
 """
-import numpy as np
 from datetime import timedelta
-from src import io_utils, dynamics, gnc, postprocess
+import numpy as np
+from src.post_process import postprocess
+from src.io_utils import init_PROTOS
+from src import dynamics, gnc
 
 def main():
     # Parse input
-    config = io_utils.parse_input("data/input_files/config_quiz_4.jsonx")
+    config = init_PROTOS.parse_input("data/input_files/config_quiz_10.jsonx")
     sim_config = config["simulation"]
     dyn_config = config["dynamics"]
     gnc_config = config["gnc"]

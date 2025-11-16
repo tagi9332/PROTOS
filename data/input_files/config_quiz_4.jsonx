@@ -17,7 +17,7 @@
     {
       "name": "Chief",
       "initial_state": {
-        "state": [8500,0,53,55,40,0], // km, km/s in ECI frame, degrees for OEs
+        "state": [8500,1e-8,53,55,40,0], // km, km/s in ECI frame, degrees for OEs
         "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])    
       },
       "mass": 500.0,

@@ -41,11 +41,12 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 sys.path.append(PROJECT_ROOT)
 
-from src import io_utils, dynamics, gnc
+from src.io_utils import init_PROTOS
+from src import dynamics, gnc
 
 def main():
     # 1. Parse input
-    config = io_utils.parse_input("data/input_files/J2_regression_test.jsonx")
+    config = init_PROTOS.parse_input("data/input_files/J2_regression_test.jsonx")
     dyn_config = config["dynamics"]
     gnc_config = config["gnc"]
 

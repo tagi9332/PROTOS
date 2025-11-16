@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import plotly.graph_objects as go
-from utils.frame_convertions.rel_to_inertial_functions import LVLH_DCM
+from utils.frame_conversions.rel_to_inertial_functions import LVLH_DCM
 
 def plot_3d_RIC_trajectory(results_serializable, output_dir, show_plot=True, filename="hill_frame_trajectory.png"):
     """

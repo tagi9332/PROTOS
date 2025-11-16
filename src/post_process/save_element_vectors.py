@@ -2,7 +2,6 @@ import os
 import csv
 import numpy as np
 from data.resources.constants import MU_EARTH
-from numba import njit
 from utils.orbital_element_conversions.oe_conversions import inertial_to_orbital_elements
 
 def save_orbital_elements(results_serializable, output_dir):

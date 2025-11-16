@@ -1,5 +1,5 @@
 import numpy as np
-from utils.frame_convertions.rel_to_inertial_functions import rel_vector_to_inertial
+from utils.frame_conversions.rel_to_inertial_functions import rel_vector_to_inertial
 from data.resources.constants import MU_EARTH
 
 def step_linearized_2body(state: dict, dt: float, config: dict):

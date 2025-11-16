@@ -1,5 +1,5 @@
 import numpy as np
-from utils.frame_convertions.rel_to_inertial_functions import LVLH_DCM, rel_vector_to_inertial
+from utils.frame_conversions.rel_to_inertial_functions import LVLH_DCM, rel_vector_to_inertial
 from utils.orbital_dynamics.orbital_accel import grav_accel
 
 def cartesian_step(state: dict, config: dict) -> dict:

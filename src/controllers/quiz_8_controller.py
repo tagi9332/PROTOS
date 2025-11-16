@@ -2,7 +2,7 @@
 
 import numpy as np
 from utils.orbital_element_conversions.oe_conversions import inertial_to_orbital_elements
-from utils.frame_convertions.rel_to_inertial_functions import LVLH_DCM
+from utils.frame_conversions.rel_to_inertial_functions import LVLH_DCM
 
 def quiz_8_step(state: dict, config: dict) -> dict:
     """

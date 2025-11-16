@@ -1,6 +1,6 @@
 import numpy as np
 from utils.orbital_element_conversions.oe_conversions import inertial_to_orbital_elements, orbital_elements_to_inertial
-from utils.frame_convertions.rel_to_inertial_functions import LVLH_DCM, compute_omega
+from utils.frame_conversions.rel_to_inertial_functions import LVLH_DCM, compute_omega
 
 def mean_oe_step(state: dict, config: dict) -> dict:
     """
@@ -18,18 +18,13 @@ def mean_oe_step(state: dict, config: dict) -> dict:
     dOEs_des = np.array(rpo.get("deputy_desired_relative_state", [0,0,0,0,0,0]))
     
     # Chief orbital elements
-    a_chief, e_chief, i_chief, RAAN_chief, AOP_chief, TA_chief = inertial_to_orbital_elements(chief_r, chief_v)
+    oe_chief = inertial_to_orbital_elements(chief_r, chief_v, units="deg") # km, km/s, degrees
 
     # Apply delta OEs
-    a_dep = a_chief + dOEs_des[0]
-    e_dep = e_chief + dOEs_des[1]
-    i_dep = i_chief + dOEs_des[2]
-    RAAN_dep = RAAN_chief + dOEs_des[3]
-    AOP_dep = AOP_chief + dOEs_des[4]
-    TA_dep = TA_chief + dOEs_des[5]
+    oe_deputy = oe_chief + dOEs_des
 
     # Convert desired deputy OEs to inertial
-    deputy_r_des, deputy_v_des = orbital_elements_to_inertial(a_dep, e_dep, i_dep, RAAN_dep, AOP_dep, TA_dep)
+    deputy_r_des, deputy_v_des = orbital_elements_to_inertial(oe_deputy[0], oe_deputy[1], oe_deputy[2], oe_deputy[3], oe_deputy[4], oe_deputy[5], units="deg")
 
     # Convert to LVLH relative state
     C_HN = LVLH_DCM(chief_r, chief_v)
