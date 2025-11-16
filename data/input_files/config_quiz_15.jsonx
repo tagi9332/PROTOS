@@ -1,0 +1,74 @@
+{
+  "scenario": "Configuration for Quiz 8",
+  
+    "simulation": {
+    "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC
+    "duration": 4500,                  // seconds
+    "time_step": 1,                   // seconds
+    "propagator": "2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
+    "perturbations": {
+      "J2": false,
+      "drag": false,
+      "SRP": false
+    }
+  },
+
+"satellites": [
+    {
+      "name": "Chief",
+      "initial_state": {
+        "state": [7500,0,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
+        "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])    
+      },
+      "mass": 500.0,
+      "properties": {
+        "area": 10.0,
+        "Cd": 2.2
+      }
+    },
+    {
+      "name": "Deputy",
+      "initial_state": {
+        // "state": [1,0.001,0.1,0.1,0,0], // km, km/s in ECI frame, degrees for OEs
+        // "frame": "dOEs"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+        "state": [1,-2,2,0,0,0], // km, km/s in ECI frame, degrees for OEs
+        "frame": "LVLH"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+      },
+      "mass": 300.0,
+      "properties": {
+        "area": 10.0,
+        "Cd": 2.0
+      }
+    }
+  ],
+
+  "gnc": {
+    "guidance": {
+      "type": "RPO",                   // options: NONE, RPO
+      "rpo": {
+        "deputy_desired_relative_state": [2.0,0.5,0,0,0,10], // km, km/s in ECI frame, degrees for OEs
+        "frame": "LROEs"                 // options: LVLH, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA]), LROES ([A0,B0,alpha,beta,x0,y0])
+      }
+    },
+    "navigation": {
+      "type": "EKF"                    // options: NONE, EKF ** PLACEHOLDER, does nothing **
+    },
+    "control": {
+      "control_method": "CWH",        // options: cartesian, mean_OEs, CWH
+      "gains": {
+        "K1": 0.00001,                   // proportional gain for cartesian, first diagonal element for mean_OEs
+        "K2": 0.004,                     // derivative gain for cartesian, second diagonal element for mean_OEs
+        "K3": 0.0                   // integral gain for cartesian (not currently used), third diagonal element for mean_OEs
+      },
+      "max_thrust": 5                   // maximum thrust in Newtons
+      }
+    },
+
+  "output": {
+    "save_trajectory": true,
+    "save_gnc_results": true,
+    "trajectory_file": "data/results/two_satellite_sim/trajectory.csv",
+    "gnc_file": "data/results/two_satellite_sim/gnc_results.csv",
+    "plots": true
+  }
+}

@@ -93,16 +93,3 @@ def compute_a_matrix(SMA, theta, inc, q1, q2):
     return A
 
 
-# Main function for testing
-if __name__ == "__main__":
-    # Example parameters
-    SMA = 7500  # km
-    theta = np.radians(13)  # rad
-    inc = np.radians(22)  # rad
-    q1 = 0.00707107
-    q2 = 0.00707107
-
-    A = compute_a_matrix(SMA, theta, inc, q1, q2)
-    print("A matrix:")
-    for row in A:
-        print(row)

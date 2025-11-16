@@ -34,7 +34,7 @@ def parse_input(file_path: str) -> dict:
     # -----------------------
     # GNC Initialization
     # -----------------------
-    gnc_input = init_gnc(raw_config, sim_config, chief, deputy, chief_r_init, chief_v_init, output_config)
+    gnc_input = init_gnc(raw_config, sim_config, chief, deputy, output_config)
 
     # -----------------------
     # Postprocessing

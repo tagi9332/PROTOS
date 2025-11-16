@@ -27,21 +27,21 @@ def E_to_true(E, e):
     return 2.0 * np.arctan2(np.sqrt(1 + e) * np.sin(E / 2.0),
                             np.sqrt(1 - e) * np.cos(E / 2.0))
 
-def keplerian_to_cartesian(a, e, inc, RAAN, AOP, ta, mu=MU_EARTH):
+def keplerian_to_cartesian(a, e, inc, raan, argp, ta, mu=MU_EARTH):
     """Classical orbital elements (angles in radians) -> ECI r, v."""
     p = a * (1 - e**2)
     r_pf = (p / (1 + e * np.cos(ta))) * np.array([np.cos(ta), np.sin(ta), 0.0])
     v_pf = np.sqrt(mu / p) * np.array([-np.sin(ta), e + np.cos(ta), 0.0])
 
     # rotation from perifocal to ECI: R3(RAAN) * R1(inc) * R3(AOP)
-    R3_W = np.array([[np.cos(RAAN), -np.sin(RAAN), 0.0],
-                     [np.sin(RAAN),  np.cos(RAAN), 0.0],
+    R3_W = np.array([[np.cos(raan), -np.sin(raan), 0.0],
+                     [np.sin(raan),  np.cos(raan), 0.0],
                      [0.0, 0.0, 1.0]])
     R1_i = np.array([[1.0, 0.0, 0.0],
                      [0.0, np.cos(inc), -np.sin(inc)],
                      [0.0, np.sin(inc),  np.cos(inc)]])
-    R3_w = np.array([[np.cos(AOP), -np.sin(AOP), 0.0],
-                     [np.sin(AOP),  np.cos(AOP), 0.0],
+    R3_w = np.array([[np.cos(argp), -np.sin(argp), 0.0],
+                     [np.sin(argp),  np.cos(argp), 0.0],
                      [0.0, 0.0, 1.0]])
     Q_pX = R3_W @ R1_i @ R3_w
 
@@ -75,8 +75,8 @@ def inertial_to_hill_relative(rd, vd, rc, vc):
     return rho_H, rho_dot_H
 
 # --- Main mapping: chief OE + dOE -> rho_H, rho_dot_H ---------------------
-def doe_to_rho(a_c, e_c, i_c, RAAN_c, AOP_c, f_c,
-                            da, de, di, dRAAN, dAOP, dM):
+def doe_to_rho(a_c, e_c, i_c, raan_c, argp_c, f_c,
+                            da, de, di, draan, dargp, dM):
     """
     Inputs:
       - chief elements a_c, e_c, i_c, RAAN_c, AOP_c, f_c (angles in radians)
@@ -91,7 +91,7 @@ def doe_to_rho(a_c, e_c, i_c, RAAN_c, AOP_c, f_c,
       - convert both to inertial states and compute hill relative (rho, rho_dot)
     """
     # Chief inertial
-    r_c, v_c = keplerian_to_cartesian(a_c, e_c, i_c, RAAN_c, AOP_c, f_c)
+    r_c, v_c = keplerian_to_cartesian(a_c, e_c, i_c, raan_c, argp_c, f_c)
 
     # Chief eccentric anomaly and mean anomaly
     E_c = true_to_E(f_c, e_c)
@@ -101,8 +101,8 @@ def doe_to_rho(a_c, e_c, i_c, RAAN_c, AOP_c, f_c,
     a_d = a_c + da
     e_d = e_c + de
     i_d = i_c + di
-    RAAN_d = RAAN_c + dRAAN
-    AOP_d = AOP_c + dAOP
+    raan_d = raan_c + draan
+    argp_d = argp_c + dargp
 
     # Deputy mean anomaly and true anomaly (solve Kepler with deputy e)
     M_d = M_c + dM
@@ -110,7 +110,7 @@ def doe_to_rho(a_c, e_c, i_c, RAAN_c, AOP_c, f_c,
     f_d = E_to_true(E_d, e_d)
 
     # Deputy inertial
-    r_d, v_d = keplerian_to_cartesian(a_d, e_d, i_d, RAAN_d, AOP_d, f_d)
+    r_d, v_d = keplerian_to_cartesian(a_d, e_d, i_d, raan_d, argp_d, f_d)
 
     # Hill relative
     rho_H, rho_dot_H = inertial_to_hill_relative(r_d, v_d, r_c, v_c)

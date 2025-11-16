@@ -17,9 +17,8 @@ def _init_chief_state(chief: dict):
         chief_v = chief_vector[3:]
 
     elif frame == "OES":
-        # Chief given in orbital elements vector [a, e, i, RAAN, AOP, TA]
-        a, e, i, RAAN, AOP, TA = chief_vector
-        chief_r, chief_v = orbital_elements_to_inertial(a, e, i, RAAN, AOP, TA, mu=398600.4418, units='deg')
+        # Chief given in orbital elements vector [a, e, i, raan, argp, ta]
+        chief_r, chief_v = orbital_elements_to_inertial(*chief_vector, mu=398600.4418, units='deg')
 
     else:
         raise ValueError("Chief initial state must be either ECI or ORBITAL_ELEMENTS")
@@ -69,7 +68,7 @@ def _init_deputy_state(deputy: dict, chief_r: np.ndarray, chief_v: np.ndarray, c
         deputy_rho_dot = C_HN @ (deputy_v - chief_v) - np.cross(omega, deputy_rho)
 
     # ================================
-    # CASE 4 — DOES input (delta orbital elements); [d_a, d_e, d_i, d_RAAN, d_AOP, d_TA]
+    # CASE 4 — DOES input (delta orbital elements); [d_a, d_e, d_i, d_raan, d_argp, d_ta]
     # ================================
     elif frame == "DOES":
         # If chief initial state is given in OEs, use it directly to avoid numerical instability with zero eccentricities
@@ -83,7 +82,7 @@ def _init_deputy_state(deputy: dict, chief_r: np.ndarray, chief_v: np.ndarray, c
         oe_dep = oe_chief + deputy_state
 
         # Convert deputy OEs to inertial
-        deputy_r, deputy_v = orbital_elements_to_inertial(oe_dep[0], oe_dep[1], oe_dep[2], oe_dep[3], oe_dep[4], oe_dep[5], units='deg')
+        deputy_r, deputy_v = orbital_elements_to_inertial(*oe_dep, units='deg')
 
         # Convert to LVLH relative position and velocity
         deputy_rho, deputy_rho_dot = inertial_to_rel_LVLH(deputy_r, deputy_v, chief_r, chief_v)

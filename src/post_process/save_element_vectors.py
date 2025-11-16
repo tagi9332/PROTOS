@@ -21,15 +21,15 @@ def save_orbital_elements(results_serializable, output_dir):
     delta_coes  = np.zeros((len(time), 6))
 
     for k in range(len(time)):
-        a_c, e_c, i_c, RAAN_c, ARGP_c, TA_c = inertial_to_orbital_elements(
+        a_c, e_c, i_c, raan_c, argp_c, TA_c = inertial_to_orbital_elements(
             chief_r[k], chief_v[k], MU_EARTH, 'deg'
         )
-        a_d, e_d, i_d, RAAN_d, ARGP_d, TA_d = inertial_to_orbital_elements(
+        a_d, e_d, i_d, raan_d, argp_d, TA_d = inertial_to_orbital_elements(
             deputy_r[k], deputy_v[k], MU_EARTH, 'deg'
         )
 
-        chief_coes[k]  = [a_c, e_c, i_c, RAAN_c, ARGP_c, TA_c]
-        deputy_coes[k] = [a_d, e_d, i_d, RAAN_d, ARGP_d, TA_d]
+        chief_coes[k]  = [a_c, e_c, i_c, raan_c, argp_c, TA_c]
+        deputy_coes[k] = [a_d, e_d, i_d, raan_d, argp_d, TA_d]
         delta_coes[k]  = chief_coes[k] - deputy_coes[k]
 
     # Save to CSV

@@ -24,8 +24,8 @@ def quiz_8_step(state: dict, config: dict) -> dict:
 
     # Guidance
     # Convert chief and deputy current inertial to classical orbital elements
-    a_c, e_c, _, _, _, TA_c = inertial_to_orbital_elements(r_chief, v_chief)
-    a_d, e_d, _, _, _, TA_d = inertial_to_orbital_elements(r_deputy, v_deputy)
+    a_c, e_c, _, _, _, ta_c = inertial_to_orbital_elements(r_chief, v_chief)
+    a_d, e_d, _, _, _, ta_d = inertial_to_orbital_elements(r_deputy, v_deputy)
 
     # Compute deputy current orbit element differences
     d_oe_actual = np.array([a_d - a_c,
@@ -53,10 +53,10 @@ def quiz_8_step(state: dict, config: dict) -> dict:
 
         return B
     
-    B = B_matrix(a_d, e_d, TA_d)
+    B = B_matrix(a_d, e_d, ta_d)
 
     # Compute time-variant gains
-    P_11 = 10**(-12) + 0.001*np.sin(TA_c)**(10)
+    P_11 = 10**(-12) + 0.001*np.sin(ta_c)**(10)
     Kp = np.diag([P_11, P_11])
 
     # Compute error terms

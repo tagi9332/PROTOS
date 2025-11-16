@@ -2,7 +2,7 @@ import numpy as np
 from utils.frame_conversions.rel_to_inertial_functions import LVLH_DCM, rel_vector_to_inertial
 from utils.orbital_dynamics.orbital_accel import grav_accel
 
-def cartesian_step(state: dict, config: dict) -> dict:
+def cwh_step(state: dict, config: dict) -> dict:
     """
     GNC step implementing u = -(f(r_d) - f(r_dd)) - K1*Δr - K2*Δr_dot + u_d
     Returns command acceleration in inertial frame for dynamics propagation.
@@ -22,16 +22,21 @@ def cartesian_step(state: dict, config: dict) -> dict:
 
     ## Guidance
     # Extract desired relative position and velocity
-    desired_state = config.get("desired_relative_state", {})
-    deputy_rho_des = np.array(desired_state.get("deputy_rho_des", [0, 0, 0]))
-    deputy_rho_dot_des = np.array(desired_state.get("deputy_rho_dot_des", [0, 0, 0]))
+    desired_state = np.array(config["desired_relative_state"]["state"])
+
+    # Check for correct frame definition
+    if config["desired_relative_state"].get("frame").upper() != "LROES":
+        raise ValueError("Desired state for CWH control must be given in LROES frame.") # TODO: add support for LVLH frame definition
+
+    deputy_rho_des = desired_state[:3]
+    deputy_rho_dot_des = desired_state[3:]
 
     # Convert desired relative state to desired inertial deputy state
     r_deputy_des, v_deputy_des = rel_vector_to_inertial(deputy_rho_des, deputy_rho_dot_des, r_chief, v_chief)
 
     # Get Kp and Kd from config (scalar or list), default to 1s
-    Kp = config.get("control", {}).get("pd", {}).get("Kp", 1.0)
-    Kd = config.get("control", {}).get("pd", {}).get("Kd", 1.0)
+    Kp = config.get("control", {}).get("pd", {}).get("K1", 1.0)
+    Kd = config.get("control", {}).get("pd", {}).get("K2", 1.0)
 
     # Compute error terms
     delta_r = r_deputy - r_deputy_des

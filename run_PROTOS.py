@@ -10,7 +10,7 @@ from src import dynamics, gnc
 
 def main():
     # Parse input
-    config = init_PROTOS.parse_input("data/input_files/config_quiz_10.jsonx")
+    config = init_PROTOS.parse_input("data/input_files/config_quiz_9.jsonx")
     sim_config = config["simulation"]
     dyn_config = config["dynamics"]
     gnc_config = config["gnc"]
@@ -60,8 +60,8 @@ def main():
         prev_sim_time = state.get("sim_time", 0.0)
         prev_epoch = state.get("epoch", initial_epoch)
 
-        next_state["sim_time"] = np.float64(prev_sim_time + dt)
-        next_state["epoch"] = prev_epoch + timedelta(seconds=dt)
+        next_state["sim_time"] = np.float64(prev_sim_time + dt) # type: ignore
+        next_state["epoch"] = prev_epoch + timedelta(seconds=dt) # type: ignore
 
         # Store propagated state and set it for next iteration
         trajectory.append(next_state)

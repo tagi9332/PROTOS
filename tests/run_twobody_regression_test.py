@@ -22,7 +22,7 @@ Procedure:
 
 Reference:
     - NASA GMAT (https://gmatcentral.org/)
-    - Gravity Model: Point-mass Earth + J2 zonal harmonic term
+    - Gravity Model: Point-mass Earth
 
 This test ensures consistency between PROTOS dynamics and GMAT baseline results
 for Earth orbit propagation including second zonal harmonic perturbations.

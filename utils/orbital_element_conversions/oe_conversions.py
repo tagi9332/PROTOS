@@ -11,7 +11,7 @@ def inertial_to_orbital_elements(R, V, mu=MU_EARTH,units='rad'):
     mu: gravitational parameter (km^3/s^2), default is Earth's
     units: 'rad' for radians, 'deg' for degrees
 
-    Returns: a, e, i, RAAN, AOP, TA 
+    Returns: a, e, i, RAAN, ARGP, TA 
     """
 
     warnings.filterwarnings("error", category=RuntimeWarning)
@@ -42,55 +42,55 @@ def inertial_to_orbital_elements(R, V, mu=MU_EARTH,units='rad'):
 
     # RAAN
     if n_norm < 1e-12:
-        RAAN = 0.0
+        raan = 0.0
     else:
-        cos_RAAN = Nhat[0]
-        cos_RAAN = np.clip(cos_RAAN, -1.0, 1.0)
-        RAAN = np.degrees(np.arccos(cos_RAAN))
+        cos_raan = Nhat[0]
+        cos_raan = np.clip(cos_raan, -1.0, 1.0)
+        raan = np.degrees(np.arccos(cos_raan))
         if Nhat[1] < 0:
-            RAAN = 360.0 - RAAN
+            raan = 360.0 - raan
 
     # Argument of periapsis
     if ecc < 1e-8 or n_norm < 1e-12:
-        AOP = 0.0
+        argp = 0.0
     else:
-        cos_AOP = np.dot(Nhat, e_vec) / ecc
-        cos_AOP = np.clip(cos_AOP, -1.0, 1.0)
-        AOP = np.degrees(np.arccos(cos_AOP))
+        cos_argp = np.dot(Nhat, e_vec) / ecc
+        cos_argp = np.clip(cos_argp, -1.0, 1.0)
+        argp = np.degrees(np.arccos(cos_argp))
         if e_vec[2] < 0:
-            AOP = 360.0 - AOP
+            argp = 360.0 - argp
 
     # True Anomaly
     if ecc > 1e-12:
         # Standard eccentric case
-        cos_TA = np.dot(e_vec, R) / (ecc * r_norm)
-        cos_TA = np.clip(cos_TA, -1.0, 1.0)
-        TA = np.degrees(np.arccos(cos_TA))
+        cos_ta = np.dot(e_vec, R) / (ecc * r_norm)
+        cos_ta = np.clip(cos_ta, -1.0, 1.0)
+        ta = np.degrees(np.arccos(cos_ta))
         if np.dot(R, V) < 0:
-            TA = 360.0 - TA
+            ta = 360.0 - ta
 
     else:
         # Circular orbits
         if n_norm > 1e-12:
             # Circular inclined: angle between node and R
-            cos_TA = np.dot(N, R) / (n_norm * r_norm)
-            cos_TA = np.clip(cos_TA, -1.0, 1.0)
-            TA = np.degrees(np.arccos(cos_TA))
+            cos_ta = np.dot(N, R) / (n_norm * r_norm)
+            cos_ta = np.clip(cos_ta, -1.0, 1.0)
+            ta = np.degrees(np.arccos(cos_ta))
             if R[2] < 0:
-                TA = 360.0 - TA
+                ta = 360.0 - ta
         else:
             # Circular equatorial: use atan2
-            TA = np.degrees(np.arctan2(R[1], R[0])) % 360.0
+            ta = np.degrees(np.arctan2(R[1], R[0])) % 360.0
 
     # Semi-major axis
     a = 1.0 / ((2.0 / r_norm) - (v_norm**2 / mu))
 
     if units == 'deg':
-        return a, ecc, i, RAAN, AOP, TA
+        return a, ecc, i, raan, argp, ta
     else:
-        return a, ecc, np.radians(i), np.radians(RAAN), np.radians(AOP), np.radians(TA)
+        return a, ecc, np.radians(i), np.radians(raan), np.radians(argp), np.radians(ta)
 
-def orbital_elements_to_inertial(a, e, i, RAAN, AOP, TA, mu=MU_EARTH, units='rad'):
+def orbital_elements_to_inertial(a, e, i, raan, argp, ta, mu=MU_EARTH, units='rad'):
     """
     Classical Orbital Elements -> inertial position/velocity.
 
@@ -112,23 +112,23 @@ def orbital_elements_to_inertial(a, e, i, RAAN, AOP, TA, mu=MU_EARTH, units='rad
     # Convert angles from degrees to radians if units is 'deg'
     if units == 'deg':
         i = np.radians(i)
-        RAAN = np.radians(RAAN)
-        AOP = np.radians(AOP)
-        TA = np.radians(TA)
-          
+        raan = np.radians(raan)
+        argp = np.radians(argp)
+        ta = np.radians(ta)
+
     # semi-latus rectum (works for elliptical & hyperbolic; not defined for parabolic e=1)
     if np.isclose(e, 1.0, atol=1e-12):
         raise ValueError("Parabolic case (e close to 1) not supported.")
     p = a * (1.0 - e**2)
 
-    cnu, snu = np.cos(TA), np.sin(TA)
+    cnu, snu = np.cos(ta), np.sin(ta)
     r_pf = (p / (1.0 + e * cnu)) * np.array([cnu, snu, 0.0])
     v_pf = np.sqrt(mu / p) * np.array([-snu, e + cnu, 0.0])
 
     # Rotation PQW -> IJK
-    cO, sO = np.cos(RAAN), np.sin(RAAN)
+    cO, sO = np.cos(raan), np.sin(raan)
     ci, si = np.cos(i), np.sin(i)
-    co, so = np.cos(AOP), np.sin(AOP)
+    co, so = np.cos(argp), np.sin(argp)
 
     R3_O = np.array([[cO, -sO, 0.0], [sO, cO, 0.0], [0.0, 0.0, 1.0]])
     R1_i = np.array([[1.0, 0.0, 0.0], [0.0, ci, -si], [0.0, si, ci]])
@@ -278,89 +278,7 @@ def m_to_ta(M, e, tol=1e-12, max_iter=100):
         return float(TA.squeeze())
     return TA.squeeze()
 
-
-
-
-
-#################################################
-
 def normalize_angle(angle):
     """Wrap angle to [-pi, pi)."""
     a = (angle + np.pi) % (2.0 * np.pi) - np.pi
     return a
-
-
-def rv_to_coe(r, v, mu=MU_EARTH):
-    """
-    Inertial r,v -> classical orbital elements (a, e, i, RAAN, argp, nu, M, E)
-    Angles in radians. Returns tuple (a,e,i,RAAN,argp,nu,M,E)
-    """
-    r = np.array(r)
-    v = np.array(v)
-    r_norm = np.linalg.norm(r)
-    v_norm = np.linalg.norm(v)
-    h_vec = np.cross(r, v)
-    h_norm = np.linalg.norm(h_vec)
-    # node vector
-    k_hat = np.array([0.0, 0.0, 1.0])
-    n_vec = np.cross(k_hat, h_vec)
-    n_norm = np.linalg.norm(n_vec)
-
-    # eccentricity vector
-    e_vec = (1.0 / mu) * ((v_norm**2 - mu / r_norm) * r - np.dot(r, v) * v)
-    e = np.linalg.norm(e_vec)
-
-    # specific mechanical energy
-    eps = v_norm**2 / 2.0 - mu / r_norm
-    if abs(eps) < 1e-12:
-        a = np.inf
-    else:
-        a = -mu / (2.0 * eps)
-
-    # inclination
-    i = np.arccos(np.clip(h_vec[2] / h_norm, -1.0, 1.0))
-
-    # RAAN
-    if n_norm != 0:
-        RAAN = np.arctan2(n_vec[1], n_vec[0])
-    else:
-        RAAN = 0.0
-
-    # argument of perigee
-    if n_norm != 0 and e > 1e-12:
-        argp = np.arccos(np.clip(np.dot(n_vec, e_vec) / (n_norm * e), -1.0, 1.0))
-        if e_vec[2] < 0:
-            argp = -argp
-    else:
-        argp = 0.0
-
-    # true anomaly
-    if e > 1e-12:
-        nu = np.arccos(np.clip(np.dot(e_vec, r) / (e * r_norm), -1.0, 1.0))
-        if np.dot(r, v) < 0:
-            nu = 2.0 * np.pi - nu
-    else:
-        # circular: use angle between n_vec and r
-        if n_norm != 0:
-            nu = np.arccos(np.clip(np.dot(n_vec, r) / (n_norm * r_norm), -1.0, 1.0))
-            if r[2] < 0:
-                nu = 2.0 * np.pi - nu
-        else:
-            nu = 0.0
-
-    # eccentric anomaly E and mean anomaly M (for elliptical e<1)
-    if e < 1.0:
-        # compute E from true anomaly
-        E = 2.0 * np.arctan2(np.tan(nu / 2.0) * np.sqrt((1.0 - e) / (1.0 + e)), 1.0)
-        M = E - e * np.sin(E)
-        M = normalize_angle(M)
-    else:
-        E = None
-        M = None
-
-    # normalize angles
-    RAAN = normalize_angle(RAAN)
-    argp = normalize_angle(argp)
-    nu = normalize_angle(nu)
-
-    return a, e, i, RAAN, argp, nu, M, E
