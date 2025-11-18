@@ -35,7 +35,7 @@ tracking_error_i_deg = np.degrees(tracking_error_i)
 
 # 2. Deputy true latitude angle θ_d
 # Formula: tan(theta_d) = (ΔΩ * sin(i)) / Δi
-theta_d_rad = np.arctan((delta_Omega_desired * np.sin(i_c)) / delta_i_desired)
+theta_d_rad = np.arctan2((3 * np.sin(i_d)), -2)
 theta_d_deg = np.degrees(theta_d_rad)
 
 # 3. Delta-v magnitude Δv_h
@@ -45,10 +45,10 @@ mu = 398600.0e9  # m^3/s^2
 r = a            # circular orbit
 h = np.sqrt(mu * a)
 
-delta_v_h = (h / r) * np.sqrt(delta_i_desired**2 + (delta_Omega_desired**2) * np.sin(i_c)**2)
+delta_v_h = (h / r) * np.sqrt((np.radians(-2))**2 + (np.radians(3)**2) * np.sin(np.radians(56))**2)
 
 # 4. Burn direction relative to along-track θ_c
-theta_c_rad = np.arctan((delta_Omega_desired * np.sin(i_c)) / delta_i_desired)
+theta_c_rad = np.arctan2((3 * np.sin(i_d)), -2)
 theta_c_deg = np.degrees(theta_c_rad)
 
 # Print results

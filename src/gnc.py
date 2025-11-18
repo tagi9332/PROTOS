@@ -1,5 +1,5 @@
-from controllers.cartesian_controller import cartesian_step
-from controllers.mean_oe_controller import mean_oe_step
+from src.controllers.cartesian_controller import cartesian_step
+from src.controllers.mean_oe_controller import mean_oe_step
 from src.controllers.quiz_2_controller import quiz_2_step
 from src.controllers.quiz_3_controller import quiz_3_step
 from src.controllers.quiz_8_controller import quiz_8_step
