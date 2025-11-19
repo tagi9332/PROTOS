@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Main entry point for PROTOS simulation framework.
 """
@@ -10,7 +9,7 @@ from src import dynamics, gnc
 
 def main():
     # Parse input
-    config = init_PROTOS.parse_input("data/input_files/config_problem_3.jsonx")
+    config = init_PROTOS.parse_input("data/input_files/config_quiz_15.jsonx")
     sim_config = config["simulation"]
     dyn_config = config["dynamics"]
     gnc_config = config["gnc"]
