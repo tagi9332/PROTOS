@@ -9,7 +9,7 @@ from src import dynamics, gnc
 
 def main():
     # Parse input
-    config = init_PROTOS.parse_input("data/input_files/config_quiz_15.jsonx")
+    config = init_PROTOS.parse_input("data/input_files/config_project_2_task_2.jsonx")
     sim_config = config["simulation"]
     dyn_config = config["dynamics"]
     gnc_config = config["gnc"]
@@ -20,7 +20,6 @@ def main():
     steps = int(duration / dt) + 1
     t_eval = np.linspace(0, duration, steps)
     initial_epoch = dyn_config['simulation']['epoch']
-
 
     # Initialize state
     state = {
@@ -101,7 +100,6 @@ def main():
 
     # Postprocess results
     postprocess.postprocess(post_dict, output_dir="data/results")
-
 
 if __name__ == "__main__":
     main()

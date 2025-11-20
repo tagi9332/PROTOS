@@ -30,7 +30,7 @@ def save_orbital_elements(results_serializable, output_dir):
 
         chief_coes[k]  = [a_c, e_c, i_c, raan_c, argp_c, TA_c]
         deputy_coes[k] = [a_d, e_d, i_d, raan_d, argp_d, TA_d]
-        delta_coes[k]  = chief_coes[k] - deputy_coes[k]
+        delta_coes[k]  =  deputy_coes[k] - chief_coes[k]
 
     # Save to CSV
     header = [

@@ -3,15 +3,10 @@ import warnings
 from utils.frame_conversions.rel_to_inertial_functions import rel_vector_to_inertial
 from data.resources.constants import MU_EARTH
 
-def inertial_to_orbital_elements(R, V, mu=MU_EARTH,units='rad'):
+def inertial_to_orbital_elements(R, V, mu=MU_EARTH, units='rad'):
     """
     Convert inertial state vectors (R, V) to classical orbital elements.
-    R: position vector (km)
-    V: velocity vector (km/s)
-    mu: gravitational parameter (km^3/s^2), default is Earth's
-    units: 'rad' for radians, 'deg' for degrees
-
-    Returns: a, e, i, RAAN, ARGP, TA 
+    Returns: a, e, i, RAAN, ARGP, TA
     """
 
     warnings.filterwarnings("error", category=RuntimeWarning)
@@ -21,74 +16,103 @@ def inertial_to_orbital_elements(R, V, mu=MU_EARTH,units='rad'):
     r_norm = np.linalg.norm(R)
     v_norm = np.linalg.norm(V)
 
-    # Eccentricity vector
-    e_vec = (1.0 / mu) * ((v_norm**2 - mu / r_norm) * R - np.dot(R, V) * V)
-    ecc = np.linalg.norm(e_vec)
-
-    # Angular momentum
+    # Angular momentum vector
     H = np.cross(R, V)
     h = np.linalg.norm(H)
 
     # Line of nodes
     N = np.cross([0, 0, 1], H)
     n_norm = np.linalg.norm(N)
-    Nhat = N / n_norm
 
+    # Eccentricity vector
+    e_vec = (1/mu) * ((v_norm**2 - mu / r_norm) * R - np.dot(R, V) * V)
+    ecc = np.linalg.norm(e_vec)
+
+    # ----------------------
+    #  CIRCULAR ORBIT CHECK
+    # ----------------------
+    tol = 1e-8
+    if ecc < tol:
+        # Inclination
+        cos_i = H[2] / h
+        cos_i = np.clip(cos_i, -1, 1)
+        i = np.arccos(cos_i)
+
+        # RAAN
+        if n_norm < tol:  # equatorial circular
+            raan = 0.0
+        else:
+            Nhat = N / n_norm
+            cos_raan = np.clip(Nhat[0], -1, 1)
+            raan = np.arccos(cos_raan)
+            if Nhat[1] < 0:
+                raan = 2*np.pi - raan
+
+        # Argument of periapsis undefined → 0 by convention
+        argp = 0.0
+
+        # True anomaly depends on equatorial/inclined
+        if n_norm > tol:
+            cos_ta = np.dot(N, R) / (n_norm * r_norm)
+            cos_ta = np.clip(cos_ta, -1, 1)
+            ta = np.arccos(cos_ta)
+            if R[2] < 0:
+                ta = 2*np.pi - ta
+        else:
+            # Equatorial circular: atan2 in inertial plane
+            ta = np.arctan2(R[1], R[0]) % (2*np.pi)
+
+        # Semi-major axis
+        a = 1.0 / ((2.0 / r_norm) - (v_norm**2 / mu))
+
+        # Units
+        if units == 'deg':
+            return a, ecc, np.degrees(i), np.degrees(raan), np.degrees(argp), np.degrees(ta)
+        else:
+            return a, ecc, i, raan, argp, ta
+
+    # ------------------------------
+    # NONCIRCULAR ORBIT (ecc ≥ tol)
+    # ------------------------------
 
     # Inclination
     cos_i = H[2] / h
-    cos_i = np.clip(cos_i, -1.0, 1.0)
-    i = np.degrees(np.arccos(cos_i))
+    cos_i = np.clip(cos_i, -1, 1)
+    i = np.arccos(cos_i)
 
     # RAAN
-    if n_norm < 1e-12:
+    if n_norm < tol:
         raan = 0.0
+        Nhat = np.array([1,0,0])
     else:
-        cos_raan = Nhat[0]
-        cos_raan = np.clip(cos_raan, -1.0, 1.0)
-        raan = np.degrees(np.arccos(cos_raan))
+        Nhat = N / n_norm
+        cos_raan = np.clip(Nhat[0], -1, 1)
+        raan = np.arccos(cos_raan)
         if Nhat[1] < 0:
-            raan = 360.0 - raan
+            raan = 2*np.pi - raan
 
     # Argument of periapsis
-    if ecc < 1e-8 or n_norm < 1e-12:
-        argp = 0.0
-    else:
-        cos_argp = np.dot(Nhat, e_vec) / ecc
-        cos_argp = np.clip(cos_argp, -1.0, 1.0)
-        argp = np.degrees(np.arccos(cos_argp))
-        if e_vec[2] < 0:
-            argp = 360.0 - argp
+    cos_argp = np.dot(Nhat, e_vec) / ecc
+    cos_argp = np.clip(cos_argp, -1, 1)
+    argp = np.arccos(cos_argp)
+    if e_vec[2] < 0:
+        argp = 2*np.pi - argp
 
-    # True Anomaly
-    if ecc > 1e-12:
-        # Standard eccentric case
-        cos_ta = np.dot(e_vec, R) / (ecc * r_norm)
-        cos_ta = np.clip(cos_ta, -1.0, 1.0)
-        ta = np.degrees(np.arccos(cos_ta))
-        if np.dot(R, V) < 0:
-            ta = 360.0 - ta
-
-    else:
-        # Circular orbits
-        if n_norm > 1e-12:
-            # Circular inclined: angle between node and R
-            cos_ta = np.dot(N, R) / (n_norm * r_norm)
-            cos_ta = np.clip(cos_ta, -1.0, 1.0)
-            ta = np.degrees(np.arccos(cos_ta))
-            if R[2] < 0:
-                ta = 360.0 - ta
-        else:
-            # Circular equatorial: use atan2
-            ta = np.degrees(np.arctan2(R[1], R[0])) % 360.0
+    # True anomaly
+    cos_ta = np.dot(e_vec, R) / (ecc * r_norm)
+    cos_ta = np.clip(cos_ta, -1, 1)
+    ta = np.arccos(cos_ta)
+    if np.dot(R, V) < 0:
+        ta = 2*np.pi - ta
 
     # Semi-major axis
-    a = 1.0 / ((2.0 / r_norm) - (v_norm**2 / mu))
+    a = 1 / ((2/r_norm) - (v_norm**2/mu))
 
     if units == 'deg':
-        return a, ecc, i, raan, argp, ta
+        return a, ecc, np.degrees(i), np.degrees(raan), np.degrees(argp), np.degrees(ta)
     else:
-        return a, ecc, np.radians(i), np.radians(raan), np.radians(argp), np.radians(ta)
+        return a, ecc, i, raan, argp, ta
+
 
 def orbital_elements_to_inertial(a, e, i, raan, argp, ta, mu=MU_EARTH, units='rad'):
     """
