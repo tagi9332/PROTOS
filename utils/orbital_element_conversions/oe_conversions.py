@@ -199,7 +199,7 @@ def lroes_to_inertial(t, chief_r, chief_v, lroes, mu=MU_EARTH):
         t: time [s]
         chief_r: chief inertial position vector [km]
         chief_v: chief inertial velocity vector [km/s]
-        lroes: linear relative orbital elements [A_0, B_0, alpha, beta, x_offset, y_offset] in km and radians
+        lroes: linear relative orbital elements [A_0, B_0, alpha, beta, x_offset, y_offset] in km and !!RADIANS!!
         mu: gravitational parameter [km^3/s^2]
 
     Returns:

@@ -25,11 +25,6 @@ def parse_input(file_path: str) -> dict:
     chief = satellites["chief"]
     deputy = satellites["deputy"]
     dynamics_input = satellites["dynamics_input"]
-
-    # Get chief initial state for GNC initialization
-    chief_r_init = dynamics_input["chief_r"]
-    chief_v_init = dynamics_input["chief_v"]
-
     
     # -----------------------
     # GNC Initialization

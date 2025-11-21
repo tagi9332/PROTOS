@@ -3,41 +3,49 @@
   
     "simulation": {
     "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC
-    "duration": 4500,                  // seconds
-    "time_step": 1,                   // seconds
+    "duration": 4500,                  // simulation duration in seconds
+    "time_step": 1,                   // simulation time step in seconds
     "propagator": "2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
     "perturbations": {
-      "J2": false,
-      "drag": false,
-      "SRP": false
+      "J2": false,    // Include first order J2 perturbation
+      "drag": false,    // Include atmospheric drag perturbation
+      "SRP": false    // Include solar radiation pressure perturbation
     }
   },
 
 "satellites": [
     {
-      "name": "Chief",
+      "name": "Chief",    // Reference satellite for relative motion
       "initial_state": {
+        // "state": [-6685.20926,601.51244, 3346.06634, -1.74294, -6.70242, -2.27739], // km, km/s in ECI frame, degrees for OEs
+        // "frame": "ECI"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, ARGP, TA])
         "state": [7500,0,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
-        "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])    
+        "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, ARGP, TA])    
       },
-      "mass": 500.0,
+      "mass": 500.0,    // mass in kg
       "properties": {
-        "area": 10.0,
-        "Cd": 2.2
+        "area": 10.0,   // cross-sectional area in m^2
+        "Cd": 2.2   // drag coefficient
       }
     },
     {
       "name": "Deputy",
       "initial_state": {
-        // "state": [1,0.001,0.1,0.1,0,0], // km, km/s in ECI frame, degrees for OEs
-        // "frame": "dOEs"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
-        "state": [1,-2,2,0,0,0], // km, km/s in ECI frame, degrees for OEs
-        "frame": "LVLH"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+      // "state": [-4892.98, 3863.073, 3170.619,-3.913302, -6.258661, 1.598199], // km, km/s in ECI frame, degrees for OEs, radians and km for LROEs
+      // "frame": "ECI"                 // options: ECI, LVLH, LROEs ([A0,B0,alpha,beta,x0,y0]), dOEs ([d_a,d_e,d_i,d_RAAN,d_ARGP,d_TA])
+      // "state": [1.299038,-1.0000,0.3213938,-0.000844437,-0.00292521, -0.000431250], // km, km/s in ECI frame, degrees for OEs
+      // "frame": "LVLH"                 // options: ECI, LVLH, LROEs ([A0,B0,alpha,beta,x0,y0]), dOEs ([d_a,d_e,d_i,d_RAAN,d_ARGP,d_TA])
+      "state": [0.05, 0.05, 0.1, 0.1, 0, 200], // km, km/s in ECI frame, degrees for OEs, radians and km for LROEs
+      "frame": "LROEs"                 // options: ECI, LVLH, LROEs ([A0,B0,alpha,beta,x0,y0]), dOEs ([d_a,d_e,d_i,d_RAAN,d_ARGP,d_TA])
+      // "state": [0,0.001,0.1,0.1,0,0], // km, km/s in ECI frame, degrees for OEs, radians and km for LROEs
+      // "frame": "dOEs"                 // options: ECI, LVLH, LROEs ([A0,B0,alpha,beta,x0,y0]), dOEs ([d_a,d_e,d_i,d_RAAN,d_ARGP,d_TA])
+
+      
       },
-      "mass": 300.0,
+      "mass": 300.0,    // mass in kg
       "properties": {
-        "area": 10.0,
-        "Cd": 2.0
+        "area": 10.0,   // cross-sectional area in m^2
+        "Cd": 2.0   // drag coefficient
       }
     }
   ],
@@ -46,8 +54,8 @@
     "guidance": {
       "type": "RPO",                   // options: NONE, RPO
       "rpo": {
-        "deputy_desired_relative_state": [2.0,0.5,0,0,0,10], // km, km/s in ECI frame, degrees for OEs
-        "frame": "LROEs"                 // options: LVLH, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA]), LROES ([A0,B0,alpha,beta,x0,y0])
+        "deputy_desired_relative_state": [2.0,0.5,0,0,0,10], // km, km/s in ECI frame, degrees for OEs, radians and km for LROEs
+        "frame": "LROEs"                 // options: LVLH, dOEs ([d_a,d_e,d_i,d_RAAN,d_ARGP,d_TA]), LROES ([A0,B0,alpha,beta,x0,y0])
       }
     },
     "navigation": {
