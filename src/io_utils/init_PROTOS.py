@@ -16,25 +16,22 @@ def parse_input(file_path: str) -> dict:
     config = init_sim_config(raw_config)
     sim_config = config["simulation"]
     output_config = config["output"]
-    propagator = sim_config.get("propagator", "2BODY").upper()
 
     # -----------------------
     # Dynamics Section Handling
     # -----------------------
     satellites = init_satellites(raw_config, sim_config)
-    chief = satellites["chief"]
-    deputy = satellites["deputy"]
     dynamics_input = satellites["dynamics_input"]
     
     # -----------------------
     # GNC Initialization
     # -----------------------
-    gnc_input = init_gnc(raw_config, sim_config, chief, deputy, output_config)
+    gnc_input = init_gnc(raw_config)
 
     # -----------------------
     # Postprocessing
     # -----------------------
-    postprocess_input = init_postprocess(output_config, propagator)
+    postprocess_input = init_postprocess(output_config)
 
     return {
         "simulation": sim_config,

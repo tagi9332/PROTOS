@@ -3,7 +3,7 @@ import warnings
 from utils.frame_conversions.rel_to_inertial_functions import rel_vector_to_inertial
 from data.resources.constants import MU_EARTH
 
-def inertial_to_orbital_elements(R, V, mu=MU_EARTH, units='rad'):
+def inertial_to_oes(R, V, mu=MU_EARTH, units='rad'):
     """
     Convert inertial state vectors (R, V) to classical orbital elements.
     Returns: a, e, i, RAAN, ARGP, TA

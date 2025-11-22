@@ -1,5 +1,5 @@
 import numpy as np
-from utils.orbital_element_conversions.oe_conversions import orbital_elements_to_inertial, lroes_to_inertial, inertial_to_orbital_elements
+from utils.orbital_element_conversions.oe_conversions import orbital_elements_to_inertial, lroes_to_inertial, inertial_to_oes
 from utils.frame_conversions.rel_to_inertial_functions import (
     inertial_to_rel_LVLH, rel_vector_to_inertial,
     LVLH_DCM, compute_omega
@@ -76,7 +76,7 @@ def _init_deputy_state(deputy: dict, chief_r: np.ndarray, chief_v: np.ndarray, c
         if chief["initial_state"].get("frame", "").upper() == "OES":
             oe_chief = np.array(chief["initial_state"]["state"]) 
         else:
-            oe_chief = inertial_to_orbital_elements(chief_r, chief_v, units='deg')
+            oe_chief = inertial_to_oes(chief_r, chief_v, units='deg')
 
         # Apply delta OEs
         oe_dep = oe_chief + deputy_state
@@ -122,11 +122,9 @@ def init_satellites(raw_config: dict, sim_config: dict) -> dict:
             "chief": chief.get("properties", {}),
             "deputy": deputy.get("properties", {})
         },
-        "simulation": sim_config  # includes propagator
+        "simulation": sim_config  
     }
 
     return {
-        "chief": chief,
-        "deputy": deputy,
         "dynamics_input": dynamics_input
     }

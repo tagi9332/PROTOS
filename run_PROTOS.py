@@ -9,17 +9,17 @@ from src import dynamics, gnc
 
 def main():
     # Parse input
-    config = init_PROTOS.parse_input("data/input_files/config_project_2_task_2.jsonx")
+    config = init_PROTOS.parse_input("data/input_files/config_quiz_3.jsonx")
     sim_config = config["simulation"]
     dyn_config = config["dynamics"]
     gnc_config = config["gnc"]
 
     # Extract simulation parameters
-    dt = sim_config.get("time_step", 1) 
+    dt = sim_config.get("time_step", 1)
     duration = sim_config.get("duration", 3600.0)
     steps = int(duration / dt) + 1
     t_eval = np.linspace(0, duration, steps)
-    initial_epoch = dyn_config['simulation']['epoch']
+    initial_epoch = sim_config['epoch']
 
     # Initialize state
     state = {
@@ -93,7 +93,8 @@ def main():
 
         # Collect control accelerations
         control_accel = res["control_accel"]
-        control_accel_list.append(control_accel if isinstance(control_accel, list) else control_accel.tolist())
+        control_accel_list.append(control_accel \
+        if isinstance(control_accel, list) else control_accel.tolist())
 
     # Add control accelerations to post_dict for plotting or export
     post_dict["control_accel"] = control_accel_list

@@ -55,9 +55,10 @@
     },
     "control": {
       "control_method": "cartesian",        // options: cartesian, mean_OEs
-      "pd": {
-        "Kp": 0.00002,                   // proportional gain
-        "Kd": 0.005                     // derivative gain
+      "gains": {
+        "K1": 0.00002,                   // proportional gain for cartesian/CWH, first diagonal element for mean_OEs
+        "K2": 0.005,                     // derivative gain for cartesian/CWH, second diagonal element for mean_OEs
+        "K3": 0.0                   // integral gain for cartesian/CWH (not currently used), third diagonal element for mean_OEs
       },
       "max_thrust": 5                   // maximum thrust in Newtons
       }

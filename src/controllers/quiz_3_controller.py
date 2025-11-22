@@ -41,8 +41,8 @@ def quiz_3_step(state: dict, config: dict) -> dict:
     r_deputy_des, v_deputy_des = lroes_to_inertial(sim_time, r_chief, v_chief, lroes_des)
 
     # Get Kp and Kd from config (scalar or list), default to 1s
-    Kp = config.get("control", {}).get("pd", {}).get("Kp", 1.0)
-    Kd = config.get("control", {}).get("pd", {}).get("Kd", 1.0)
+    Kp = config.get("control", {}).get("gains", {}).get("K1", 1.0)
+    Kd = config.get("control", {}).get("gains", {}).get("K2", 1.0)
 
     # Compute error terms
     delta_r = r_deputy - r_deputy_des

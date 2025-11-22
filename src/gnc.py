@@ -5,8 +5,6 @@ from src.controllers.quiz_3_controller import quiz_3_step
 from src.controllers.quiz_8_controller import quiz_8_step
 from src.controllers.quiz_10_controller import quiz_10_step
 
-
-
 def step(state: dict, config: dict) -> dict:
     """
     Main GNC step. Chooses control mode and executes corresponding step.
@@ -38,7 +36,8 @@ def step(state: dict, config: dict) -> dict:
         else:
             raise ValueError(f"Control method '{control_method}' not recognized for RPO guidance.")
 
-
+        # Enforce saturation limits if specified in config
+        # **TODO**
     else:
         # No guidance; pass-through
         return {

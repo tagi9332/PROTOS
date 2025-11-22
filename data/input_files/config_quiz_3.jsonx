@@ -46,18 +46,19 @@
     "guidance": {
       "type": "RPO",                   // options: NONE, RPO
       "rpo": {
-        "deputy_desired_relative_state": [0,-0.05,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
-        "frame": "LVLH"                 // options: LVLH, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+        "deputy_desired_relative_state": [1,2,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
+        "frame": "LROES"                 // options: LVLH, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
       }
     },
     "navigation": {
       "type": "EKF"                    // options: NONE, EKF ** PLACEHOLDER, does nothing **
     },
     "control": {
-      "control_method": "QUIZ_3",        // options: cartesian, mean_OEs
-      "pd": {
-        "Kp": 0.00002,                   // proportional gain
-        "Kd": 0.005                     // derivative gain
+      "control_method": "cartesian",        // options: cartesian, mean_OEs
+      "gains": {
+        "K1": 0.00002,                   // proportional gain for cartesian/CWH, first diagonal element for mean_OEs
+        "K2": 0.005,                     // derivative gain for cartesian/CWH, second diagonal element for mean_OEs
+        "K3": 0.0                   // integral gain for cartesian/CWH (not currently used), third diagonal element for mean_OEs
       },
       "max_thrust": 5                   // maximum thrust in Newtons
       }

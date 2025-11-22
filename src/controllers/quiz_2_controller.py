@@ -1,5 +1,5 @@
 import numpy as np
-from utils.orbital_element_conversions.oe_conversions import orbital_elements_to_inertial, inertial_to_orbital_elements, m_to_ta, ta_to_m
+from utils.orbital_element_conversions.oe_conversions import orbital_elements_to_inertial, inertial_to_oes, m_to_ta, ta_to_m
 
 
 def grav_accel(r):
@@ -35,7 +35,7 @@ def quiz_2_step(state: dict, config: dict) -> dict:
     d_M_des = np.radians(0.1)  # deg
 
     # Get chief orbital elements
-    a_c, e_c, i_c, RAAN_c, AOP_c, TA_c = inertial_to_orbital_elements(r_chief, v_chief, units='deg')
+    a_c, e_c, i_c, RAAN_c, AOP_c, TA_c = inertial_to_oes(r_chief, v_chief, units='deg')
     
     # Convert chief true anomaly to mean anomaly
     M_c = ta_to_m(np.radians(TA_c), e_c)

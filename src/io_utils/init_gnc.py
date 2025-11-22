@@ -1,6 +1,6 @@
 import numpy as np
 
-def init_gnc(raw_config, sim_config, chief, deputy, output_config):
+def init_gnc(raw_config):
     gnc_section = raw_config.get("gnc", {})
 
     # Defaults
@@ -24,10 +24,6 @@ def init_gnc(raw_config, sim_config, chief, deputy, output_config):
 
     # Assemble GNC input without converting desired state
     gnc_input = {
-        "trajectory": None,
-        "satellites": {"chief": chief, "deputy": deputy},
-        "simulation": sim_config,
-        "output": output_config,
         "desired_relative_state": {
             "state": desired_relative_state,     # store raw
             "frame": desired_frame      # store frame (LVLH, DOES, etc.)

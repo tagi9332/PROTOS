@@ -1,7 +1,7 @@
 """Quiz 10 controller implementing PD control with gravitational feedforward"""
 
 import numpy as np
-from utils.orbital_element_conversions.oe_conversions import inertial_to_orbital_elements
+from utils.orbital_element_conversions.oe_conversions import inertial_to_oes
 from utils.frame_conversions.rel_to_inertial_functions import LVLH_DCM
 
 def quiz_10_step(state: dict, config: dict) -> dict:
@@ -24,8 +24,8 @@ def quiz_10_step(state: dict, config: dict) -> dict:
 
     # Guidance
     # Convert chief and deputy current inertial to classical orbital elements
-    a_c, _, _, _, _, _ = inertial_to_orbital_elements(r_chief, v_chief)
-    a_d, e_d, _, _, _, TA_d = inertial_to_orbital_elements(r_deputy, v_deputy)
+    a_c, _, _, _, _, _ = inertial_to_oes(r_chief, v_chief)
+    a_d, e_d, _, _, _, TA_d = inertial_to_oes(r_deputy, v_deputy)
 
     # Compute deputy current orbit element differences
     d_a_actual = a_d - a_c                       
