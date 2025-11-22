@@ -3,7 +3,7 @@ Main entry point for PROTOS simulation framework.
 """
 from datetime import timedelta
 import numpy as np
-from post_process import post_process
+from src.post_process import post_process
 from src.io_utils import init_PROTOS
 from src import dynamics, gnc
 
@@ -89,7 +89,7 @@ def main():
     post_dict["control_accel"] = control_accel_list
 
     # Postprocess results
-    post_process.postprocess(post_dict, output_dir="data/results")
+    post_process.post_process(post_dict, output_dir="data/results")
 
 if __name__ == "__main__":
     main()

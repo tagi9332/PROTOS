@@ -18,7 +18,7 @@ def _convert_ndarray(obj):
         return obj.tolist()
     return obj
 
-def postprocess(results, output_dir):
+def post_process(results, output_dir):
 
     os.makedirs(output_dir, exist_ok=True)
     results_serializable = _convert_ndarray(results)
