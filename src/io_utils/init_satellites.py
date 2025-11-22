@@ -112,19 +112,26 @@ def init_satellites(raw_config: dict, sim_config: dict) -> dict:
     
     # Dynamics input: inertial positions/velocities + simulation config
     dynamics_input = {
-        "chief_r": chief_r,
-        "chief_v": chief_v,
-        "deputy_r": deputy_r,
-        "deputy_v": deputy_v,
-        "deputy_rho": deputy_rho,
-        "deputy_rho_dot": deputy_rho_dot,
         "satellite_properties": {
             "chief": chief.get("properties", {}),
             "deputy": deputy.get("properties", {})
         },
-        "simulation": sim_config  
+        "simulation": {
+            "propagator": sim_config.get("propagator", "2BODY").upper(),
+            "perturbations": sim_config.get("perturbations", {})
+        }  
     }
 
     return {
-        "dynamics_input": dynamics_input
+        "dynamics_input": dynamics_input,
+        "init_state": {
+            "sim_time": 0.0,
+            "epoch": sim_config['epoch'],
+            "chief_r": chief_r,
+            "chief_v": chief_v,
+            "deputy_r": deputy_r,
+            "deputy_v": deputy_v,
+            "deputy_rho": deputy_rho,
+            "deputy_rho_dot": deputy_rho_dot
+        }
     }

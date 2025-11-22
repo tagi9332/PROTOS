@@ -6,7 +6,7 @@ from src.propagators.lin_rel_motion_propagator import step_linearized_2body
 # -------------------------------
 # Main step function for time-stepping
 # -------------------------------
-def step(state: dict, dt: float, config: dict):
+def dyn_step(dt: float, state: dict, config: dict):
     """
     Propagate the deputy state one time step using the selected scheme.
     
@@ -14,7 +14,7 @@ def step(state: dict, dt: float, config: dict):
     dt: timestep [s]
     config: dict from io_utils.parse_input["dynamics"]
     """
-    propagator = config.get("simulation", {}).get("propagator", "CWH").upper()
+    propagator = config.get("simulation", {}).get("propagator", "2BODY").upper() # default to full nonlinear progagation
     
     if propagator == "CWH":
         return step_cwh(state, dt, config)

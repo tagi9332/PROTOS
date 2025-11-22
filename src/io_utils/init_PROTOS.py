@@ -20,8 +20,8 @@ def parse_input(file_path: str) -> dict:
     # -----------------------
     # Dynamics Section Handling
     # -----------------------
-    satellites = init_satellites(raw_config, sim_config)
-    dynamics_input = satellites["dynamics_input"]
+    dyn_config = init_satellites(raw_config, sim_config)
+    init_state = dyn_config["init_state"]
     
     # -----------------------
     # GNC Initialization
@@ -35,7 +35,9 @@ def parse_input(file_path: str) -> dict:
 
     return {
         "simulation": sim_config,
-        "dynamics": dynamics_input,
+        "t_eval": config["t_eval"],
+        "dynamics": dyn_config.get("dynamics_input", {}),
+        "init_state": init_state,
         "gnc": gnc_input,
         "postprocess": postprocess_input,
         "raw": raw_config

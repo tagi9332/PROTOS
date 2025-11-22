@@ -69,7 +69,7 @@ def main():
 
     # 3. Propagate dynamics
     for _ in t_eval:
-        next_state = dynamics.step(state, dt, dyn_config)
+        next_state = dynamics.dyn_step(state, dt, dyn_config)
         gnc_out = gnc.step(next_state, gnc_config)
         state = next_state
 

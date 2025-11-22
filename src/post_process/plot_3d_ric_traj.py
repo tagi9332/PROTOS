@@ -2,7 +2,7 @@ import os
 import numpy as np
 import plotly.graph_objects as go
 
-def plot_3d_RIC_trajectory(results_serializable, output_dir, show_plot=True, filename="hill_frame_trajectory.png"):
+def plot_3d_RIC_trajectory(results_serializable, output_dir, show_plot=True):
     """
     Plots the deputy's relative trajectory in the chief's Hill (RIC) frame.
     Saves a PNG and optionally displays an interactive 3D plot.
@@ -11,7 +11,6 @@ def plot_3d_RIC_trajectory(results_serializable, output_dir, show_plot=True, fil
         results_serializable (dict): Simulation results containing 'full_state'.
         output_dir (str): Directory to save the figure.
         show_plot (bool): Whether to display an interactive plot.
-        filename (str): Name of the saved static figure (PNG).
     """
     # Get state data
     states = np.array(results_serializable.get("full_state", []), dtype=float)
