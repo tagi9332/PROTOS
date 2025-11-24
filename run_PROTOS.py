@@ -35,11 +35,15 @@ def main():
         # Store GNC output
         gnc_results.append(gnc_out)
 
-        # Add control acceleration to dynamics configuration or state
+        # Extract translational and rotational commands from the dictionary
         control_accel = gnc_out.get("accel_cmd", np.zeros(3))
         state["control_accel"] = control_accel
-        gnc_out["control_accel"] = control_accel
-
+        if sim_config.get("simulation_mode", "3DOF").upper() == "6DOF":
+            torque_chief = gnc_out.get("torque_cmd_chief", np.zeros(3))
+            torque_deputy = gnc_out.get("torque_cmd_deputy", np.zeros(3))
+            state["torque_cmd_chief"] = torque_chief
+            state["torque_cmd_deputy"] = torque_deputy
+            
         # Propagate dynamics using control input
         next_state = dynamics.dyn_step(dt, state, dyn_config)
 

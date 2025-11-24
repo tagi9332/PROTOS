@@ -13,7 +13,8 @@ def init_gnc(raw_config):
     gnc_input = {
         "guidance": guidance,
         "navigation": navigation,
-        "control": control
+        "control": control,
+        "simulation_mode": raw_config.get("simulation", {}).get("simulation_mode", "3DOF").upper()
     }
 
     return gnc_input

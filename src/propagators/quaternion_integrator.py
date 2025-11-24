@@ -40,14 +40,14 @@ def q_step(dt: float, state: dict, config: dict):
     deputy_inertia = np.array(config['satellite_properties']['deputy']['inertia_matrix'])
 
     # Placeholder torques (replace with attitude control)
-    chief_torque = np.zeros(3)
-    deputy_torque = np.zeros(3)
+    torque_cmd_chief = np.array(state.get('torque_cmd_chief', [0,0,0]))
+    torque_cmd_deputy = np.array(state.get('torque_cmd_deputy', [0,0,0]))
 
     # -----------------------------
     # Integrate using RK54
     # -----------------------------
-    chief_y_next = rk54(lambda y: attitude_derivative(y, chief_inertia, chief_torque), chief_y, dt)
-    deputy_y_next = rk54(lambda y: attitude_derivative(y, deputy_inertia, deputy_torque), deputy_y, dt)
+    chief_y_next = rk54(lambda y: attitude_derivative(y, chief_inertia, torque_cmd_chief), chief_y, dt)
+    deputy_y_next = rk54(lambda y: attitude_derivative(y, deputy_inertia, torque_cmd_deputy), deputy_y, dt)
 
     # Normalize quaternions
     chief_q_next = chief_y_next[0:4] / np.linalg.norm(chief_y_next[0:4])
