@@ -123,7 +123,7 @@ def cartesian_step(state: dict, config: dict) -> dict:
 
     # --- Guidance: desired LVLH relative state ---
     rho_des, rho_dot_des = _get_desired_state_LVLH(
-        config.get("guidance", {}).get("rpo", {}).get("frame", "LVLH"),
+        config.get("guidance", {}).get("rpo", {}).get("frame", "LVLH").upper(),
         config.get("guidance", {}).get("rpo", {}).get("deputy_desired_relative_state"),
         r_c,
         v_c,

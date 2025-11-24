@@ -9,7 +9,7 @@ from src import dynamics, gnc
 
 def main():
     # Parse input
-    config = init_PROTOS.parse_input("data/input_files/config_quiz_4.jsonx")
+    config = init_PROTOS.parse_input("data/input_files/test_config_6dof_rpo.jsonx")
     sim_config = config["simulation"]
     dyn_config = config["dynamics"]
     gnc_config = config["gnc"]
@@ -24,7 +24,7 @@ def main():
 
     # Storage for trajectory and GNC outputs
     trajectory = [state.copy()]  # store the initial state at t=0
-    gnc_results = []
+    state_results = []
 
     # Time-stepped propagation loop 
     for _ in enumerate(t_eval[:-1]):  # iterate over all but the last time
@@ -33,7 +33,7 @@ def main():
         gnc_out = gnc.step(state, gnc_config)
 
         # Store GNC output
-        gnc_results.append(gnc_out)
+        state_results.append(gnc_out)
 
         # Add control acceleration to dynamics configuration or state
         control_accel = gnc_out.get("accel_cmd", np.zeros(3))
@@ -57,17 +57,14 @@ def main():
     # Execute and store final GNC step (not commanded)
     final_gnc = gnc.step(state, gnc_config)
     final_gnc["control_accel"] = final_gnc.get("accel_cmd", np.zeros(3))
-    gnc_results.append(final_gnc)
+    state_results.append(final_gnc)
 
     # Prepare postprocess-compatible dictionaries
-    post_dict = {}
-
-    # Store the time array
     post_dict = {"time": t_eval.tolist(), "full_state": []}
 
     # Build the "full_state" list
     control_accel_list = []
-    for res in gnc_results:
+    for res in state_results:
         # Build full state vector
         state_parts = [
             res["chief_r"],
@@ -77,6 +74,16 @@ def main():
             res["deputy_rho"],
             res["deputy_rho_dot"],
         ]
+
+        # Add attitude states if 6DOF
+        if sim_config.get("simulation_mode", "3DOF").upper() == "6DOF":
+            state_parts.extend([
+                res["chief_q_BN"],  # quaternion
+                res.get("chief_omega_BN"),
+                res.get("deputy_q_BN"),
+                res.get("deputy_omega_BN")
+            ])
+
         state_vector = np.hstack(state_parts)
         post_dict["full_state"].append(state_vector.tolist())
 

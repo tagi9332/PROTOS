@@ -25,6 +25,13 @@ def _init_chief_state(chief: dict):
 
     return chief_r, chief_v
 
+def _init_attitude(satellite: dict):
+    attitude = satellite["initial_state"].get("attitude", {})
+    q_BN = np.array(attitude.get("sigma_BN", [1, 0, 0, 0]))  # Default to identity quaternion
+    omega_BN = np.array(attitude.get("omega_BN", [0, 0, 0]))     # Default to zero angular velocity
+
+    return q_BN, omega_BN
+
 def _init_deputy_state(deputy: dict, chief_r: np.ndarray, chief_v: np.ndarray, chief):
 
     deputy_state = np.array(deputy["initial_state"]["state"])
@@ -107,8 +114,14 @@ def init_satellites(raw_config: dict, sim_config: dict) -> dict:
     # Initialize chief state
     chief_r, chief_v = _init_chief_state(chief)
 
+    # Initialize chief attitude
+    q_BN_c, omega_BN_c = _init_attitude(chief)
+
     # Initialize deputy state
     deputy_r, deputy_v, deputy_rho, deputy_rho_dot = _init_deputy_state(deputy, chief_r, chief_v, chief)
+
+    # Initialize deputy attitude
+    q_BN_d, omega_BN_d = _init_attitude(deputy)
     
     # Dynamics input: inertial positions/velocities + simulation config
     dynamics_input = {
@@ -118,7 +131,8 @@ def init_satellites(raw_config: dict, sim_config: dict) -> dict:
         },
         "simulation": {
             "propagator": sim_config.get("propagator", "2BODY").upper(),
-            "perturbations": sim_config.get("perturbations", {})
+            "perturbations": sim_config.get("perturbations", {},),
+            "simulation_mode": sim_config.get("simulation_mode", "3DOF").upper()
         }  
     }
 
@@ -132,6 +146,10 @@ def init_satellites(raw_config: dict, sim_config: dict) -> dict:
             "deputy_r": deputy_r,
             "deputy_v": deputy_v,
             "deputy_rho": deputy_rho,
-            "deputy_rho_dot": deputy_rho_dot
+            "deputy_rho_dot": deputy_rho_dot,
+            "chief_q_BN": q_BN_c,
+            "chief_omega_BN": omega_BN_c,
+            "deputy_q_BN": q_BN_d,
+            "deputy_omega_BN": omega_BN_d
         }
     }
