@@ -27,7 +27,7 @@ def _init_chief_state(chief: dict):
 
 def _init_attitude(satellite: dict):
     attitude = satellite["initial_state"].get("attitude", {})
-    q_BN = np.array(attitude.get("sigma_BN", [1, 0, 0, 0]))  # Default to identity quaternion
+    q_BN = np.array(attitude.get("q_BN", [1, 0, 0, 0]))  # Default to identity quaternion
     omega_BN = np.array(attitude.get("omega_BN", [0, 0, 0]))     # Default to zero angular velocity
 
     return q_BN, omega_BN
@@ -114,14 +114,16 @@ def init_satellites(raw_config: dict, sim_config: dict) -> dict:
     # Initialize chief state
     chief_r, chief_v = _init_chief_state(chief)
 
-    # Initialize chief attitude
-    q_BN_c, omega_BN_c = _init_attitude(chief)
-
     # Initialize deputy state
     deputy_r, deputy_v, deputy_rho, deputy_rho_dot = _init_deputy_state(deputy, chief_r, chief_v, chief)
 
-    # Initialize deputy attitude
-    q_BN_d, omega_BN_d = _init_attitude(deputy)
+    if sim_config.get("simulation_mode", "3DOF").upper() == "6DOF":
+        # Initialize chief attitude
+        q_BN_c, omega_BN_c = _init_attitude(chief)
+        
+        # Initialize deputy attitude
+        q_BN_d, omega_BN_d = _init_attitude(deputy)
+
     
     # Dynamics input: inertial positions/velocities + simulation config
     dynamics_input = {
@@ -136,20 +138,25 @@ def init_satellites(raw_config: dict, sim_config: dict) -> dict:
         }  
     }
 
-    return {
-        "dynamics_input": dynamics_input,
-        "init_state": {
-            "sim_time": 0.0,
-            "epoch": sim_config['epoch'],
-            "chief_r": chief_r,
-            "chief_v": chief_v,
-            "deputy_r": deputy_r,
-            "deputy_v": deputy_v,
-            "deputy_rho": deputy_rho,
-            "deputy_rho_dot": deputy_rho_dot,
+    init_state = {
+        "sim_time": 0.0,
+        "epoch": sim_config['epoch'],
+        "chief_r": chief_r,
+        "chief_v": chief_v,
+        "deputy_r": deputy_r,
+        "deputy_v": deputy_v,
+        "deputy_rho": deputy_rho,
+        "deputy_rho_dot": deputy_rho_dot,
+    }
+    if sim_config.get("simulation_mode", "3DOF").upper() == "6DOF":
+        init_state.update({
             "chief_q_BN": q_BN_c,
             "chief_omega_BN": omega_BN_c,
             "deputy_q_BN": q_BN_d,
             "deputy_omega_BN": omega_BN_d
-        }
+        })
+
+    return {
+        "dynamics_input": dynamics_input,
+        "init_state": init_state
     }

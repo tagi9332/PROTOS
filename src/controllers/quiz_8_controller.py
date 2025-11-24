@@ -18,10 +18,6 @@ def quiz_8_step(state: dict, config: dict) -> dict:
     r_deputy = np.array(state["deputy_r"])
     v_deputy = np.array(state["deputy_v"])
 
-    # Extract relative vectors
-    deputy_rho = np.array(state["deputy_rho"])
-    deputy_rho_dot = np.array(state["deputy_rho_dot"])
-
     # Guidance
     # Convert chief and deputy current inertial to classical orbital elements
     a_c, e_c, _, _, _, ta_c = inertial_to_oes(r_chief, v_chief)
@@ -81,12 +77,5 @@ def quiz_8_step(state: dict, config: dict) -> dict:
     #         u = (u / norm_u) * max_accel
 
     return {
-        "status": "lvlh",
-        "chief_r": state["chief_r"].tolist(),
-        "chief_v": state["chief_v"].tolist(),
-        "deputy_r": state["deputy_r"].tolist(),
-        "deputy_v": state["deputy_v"].tolist(),
-        "deputy_rho": deputy_rho.tolist(),
-        "deputy_rho_dot": deputy_rho_dot.tolist(),
         "accel_cmd": u.tolist()
     }

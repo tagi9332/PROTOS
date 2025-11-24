@@ -148,12 +148,5 @@ def cartesian_step(state: dict, config: dict) -> dict:
 
     # Return updated dictionary
     return {
-        "status": "lvlh",
-        "chief_r": r_c.tolist(),
-        "chief_v": v_c.tolist(),
-        "deputy_r": r_d.tolist(),
-        "deputy_v": v_d.tolist(),
-        "deputy_rho": np.array(state["deputy_rho"]).tolist(),
-        "deputy_rho_dot": np.array(state["deputy_rho_dot"]).tolist(),
         "accel_cmd": u.tolist()
     }

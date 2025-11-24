@@ -24,16 +24,16 @@ def main():
 
     # Storage for trajectory and GNC outputs
     trajectory = [state.copy()]  # store the initial state at t=0
-    state_results = []
+    gnc_results = []
 
     # Time-stepped propagation loop 
     for _ in enumerate(t_eval[:-1]):  # iterate over all but the last time
 
         # Run GNC to compute commanded control input
-        gnc_out = gnc.step(state, gnc_config)
+        gnc_out = gnc.gnc_step(state, gnc_config)
 
         # Store GNC output
-        state_results.append(gnc_out)
+        gnc_results.append(gnc_out)
 
         # Add control acceleration to dynamics configuration or state
         control_accel = gnc_out.get("accel_cmd", np.zeros(3))
@@ -55,16 +55,15 @@ def main():
         state = next_state
 
     # Execute and store final GNC step (not commanded)
-    final_gnc = gnc.step(state, gnc_config)
+    final_gnc = gnc.gnc_step(state, gnc_config)
     final_gnc["control_accel"] = final_gnc.get("accel_cmd", np.zeros(3))
-    state_results.append(final_gnc)
+    gnc_results.append(final_gnc)
 
     # Prepare postprocess-compatible dictionaries
     post_dict = {"time": t_eval.tolist(), "full_state": []}
 
     # Build the "full_state" list
-    control_accel_list = []
-    for res in state_results:
+    for res in trajectory:
         # Build full state vector
         state_parts = [
             res["chief_r"],
@@ -78,22 +77,18 @@ def main():
         # Add attitude states if 6DOF
         if sim_config.get("simulation_mode", "3DOF").upper() == "6DOF":
             state_parts.extend([
-                res["chief_q_BN"],  # quaternion
-                res.get("chief_omega_BN"),
-                res.get("deputy_q_BN"),
-                res.get("deputy_omega_BN")
+                np.array(res.get("chief_q_BN", np.zeros(4))),
+                np.array(res.get("chief_omega_BN", np.zeros(3))),
+                np.array(res.get("deputy_q_BN", np.zeros(4))),
+                np.array(res.get("deputy_omega_BN", np.zeros(3)))
             ])
 
+        # Flatten and append to post_dict
         state_vector = np.hstack(state_parts)
         post_dict["full_state"].append(state_vector.tolist())
 
-        # Collect control accelerations
-        control_accel = res["control_accel"]
-        control_accel_list.append(control_accel \
-        if isinstance(control_accel, list) else control_accel.tolist())
-
     # Add control accelerations to post_dict for plotting or export
-    post_dict["control_accel"] = control_accel_list
+    post_dict["control_accel"] = gnc_results
 
     # Postprocess results
     post_process.post_process(post_dict, output_dir="data/results")

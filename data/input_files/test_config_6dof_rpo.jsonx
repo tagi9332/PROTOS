@@ -21,8 +21,8 @@
         "state": [7500,0,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
         "frame": "OEs",                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])   
         "attitude": {
-          "sigma_BN": [1,0,0,0],    // quaternion, defined relative to ECI frame
-          "omega_BN": [0,0,0]     // rad/s, body-frame angular rate
+          "q_BN": [1,0,0,0],    // quaternion, defined relative to ECI frame
+          "omega_BN": [-0.01,0.002,0.05]     // rad/s, body-frame angular rate
         }
       },
       "mass": 500.0,  // kg
@@ -44,7 +44,7 @@
         "state": [1,-2,2,0,0,0], // km, km/s in ECI frame, degrees for OEs
         "frame": "LVLH",                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
         "attitude": {
-          "sigma_BN": [1,0,0,0.2],    // quaternion, defined relative to ECI frame
+          "q_BN": [0.512, -0.428, 0.733, -0.178],    // quaternion, defined relative to ECI frame
           "omega_BN": [0.01,0,0]     // rad/s, body-frame angular rate
         }
       },
@@ -101,8 +101,8 @@
   "output": {
     "save_trajectory": true,
     "save_gnc_results": true,
-    "trajectory_file": "data/results/two_satellite_sim/trajectory.csv",
-    "gnc_file": "data/results/two_satellite_sim/gnc_results.csv",
+    "trajectory_file": "data/results/two_satellite_sim/trajectory.csv", // Currently does nothing
+    "gnc_file": "data/results/two_satellite_sim/gnc_results.csv", // Currently does nothing
     "plots": true
   }
 }

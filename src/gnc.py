@@ -5,7 +5,7 @@ from src.controllers.quiz_3_controller import quiz_3_step
 from src.controllers.quiz_8_controller import quiz_8_step
 from src.controllers.quiz_10_controller import quiz_10_step
 
-def step(state: dict, config: dict) -> dict:
+def gnc_step(state: dict, config: dict) -> dict:
     """
     Main GNC step. Chooses control mode and executes corresponding step.
     
@@ -41,12 +41,5 @@ def step(state: dict, config: dict) -> dict:
     else:
         # No guidance; pass-through
         return {
-            "status": "pass-through",
-            "chief_r": state["chief_r"].tolist(),
-            "chief_v": state["chief_v"].tolist(),
-            "deputy_r": state["deputy_r"].tolist(),
-            "deputy_v": state["deputy_v"].tolist(),
-            "deputy_rho": state["deputy_rho"].tolist(),
-            "deputy_rho_dot": state["deputy_rho_dot"].tolist(),
             "accel_cmd": [0,0,0]
     }
