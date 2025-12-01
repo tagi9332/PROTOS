@@ -5,7 +5,7 @@ from src.controllers.quiz_3_controller import quiz_3_step
 from src.controllers.quiz_8_controller import quiz_8_step
 from src.controllers.quiz_10_controller import quiz_10_step
 # Import your attitude controller here
-from src.controllers.attitude_controller import attitude_step  
+from src.controllers.attitude_control.attitude_controller import attitude_step   
 
 def gnc_step(state: dict, config: dict) -> dict:
     """
@@ -71,6 +71,8 @@ def gnc_step(state: dict, config: dict) -> dict:
         att_cmds = attitude_step(state, config)
         torque_cmd_chief = att_cmds.get("torque_chief", [0,0,0])
         torque_cmd_deputy = att_cmds.get("torque_deputy", [0,0,0])
+        error_quat = att_cmds.get("quat_error_deputy", [0,0,0,0])
+        omega_BN = att_cmds.get("rate_error_deputy", [0,0,0])
 
     # -------------------------------
     # Return combined command dictionary
@@ -82,7 +84,9 @@ def gnc_step(state: dict, config: dict) -> dict:
     if is_6dof:
         gnc_out_dict.update({
             "torque_cmd_chief": torque_cmd_chief,
-            "torque_cmd_deputy": torque_cmd_deputy
+            "torque_cmd_deputy": torque_cmd_deputy,
+            "quat_error_deputy": error_quat, 
+            "rate_error_deputy": omega_BN
         })
 
     return gnc_out_dict

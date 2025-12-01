@@ -2643,10 +2643,10 @@ def EP2C(q):
         the Eulerparameter vector.
     """
 
-    q0 = q[0,0]
-    q1 = q[1,0]
-    q2 = q[2,0]
-    q3 = q[3,0]
+    q0 = q[0]
+    q1 = q[1]
+    q2 = q[2]
+    q3 = q[3]
 
     C = np.matrix("1. 0. 0.0. 1. 0.0. 0. 1.")
     C[0,0] = q0*q0+q1*q1-q2*q2-q3*q3

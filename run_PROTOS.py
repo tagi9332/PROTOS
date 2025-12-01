@@ -39,10 +39,10 @@ def main():
         control_accel = gnc_out.get("accel_cmd", np.zeros(3))
         state["control_accel"] = control_accel
         if sim_config.get("simulation_mode", "3DOF").upper() == "6DOF":
-            torque_chief = gnc_out.get("torque_cmd_chief", np.zeros(3))
-            torque_deputy = gnc_out.get("torque_cmd_deputy", np.zeros(3))
-            state["torque_cmd_chief"] = torque_chief
-            state["torque_cmd_deputy"] = torque_deputy
+            state["torque_cmd_chief"] = gnc_out.get("torque_cmd_chief", np.zeros(3))
+            state["torque_cmd_deputy"] = gnc_out.get("torque_cmd_deputy", np.zeros(3))
+            state["quat_error_deputy"] = gnc_out.get("quat_error_deputy", np.zeros(4))
+            state["rate_error_deputy"] = gnc_out.get("rate_error_deputy", np.zeros(3))
             
         # Propagate dynamics using control input
         next_state = dynamics.dyn_step(dt, state, dyn_config)
