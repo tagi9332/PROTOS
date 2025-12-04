@@ -1,7 +1,6 @@
 import numpy as np
 
 
-# --- robust conversions ----------------------------------------------------
 def EP2C(q):
     """Euler params (q0,q1,q2,q3) -> DCM (body -> inertial)"""
     q0, q1, q2, q3 = q
@@ -54,112 +53,160 @@ def C2EP(C):
     q = q / np.linalg.norm(q)
     return q
 
-# --- error computation -----------------------------------------------------
-def get_errors(q_BN, omega_BN, target_vector, omega_target=np.zeros(3)):
+def C2MRP(C):
     """
-    Compute attitude quaternion error and rate error.
-    - q_BN: current body->inertial quaternion (q0,q1,q2,q3)
-    - omega_BN: angular rate of body w.r.t. inertial, expressed in body frame
-    - target_vector: desired pointing vector expressed in inertial frame (e.g., vector from deputy to target)
-    - omega_target: desired angular rate expressed in inertial frame (optional)
+    C2MRP
+        Translates the 3x3 direction cosine matrix C into the 
+        corresponding 3x1 MRP vector sigma.
+        
+        Enforces the constraint |sigma| <= 1 (Shadow Set switching)
+        by ensuring the quaternion scalar is positive.
+    """
+    # Convert to Quaternion (Euler Parameters)
+    b = C2EP(C)
+    
+    # Ensure it is a flat numpy array (not a matrix object)
+    b = np.array(b).flatten()
+
+    # Enforce Shortest Rotation (Shadow Set Check)
+    # The MRP magnitude is > 1 if the scalar part (b[0]) is negative.
+    # Since q and -q represent the same rotation, flip b if b[0] < 0.
+    if b[0] < 0:
+        b = -b
+
+    # Calculate MRP
+    # Formula: sigma = vector_part / (1 + scalar_part)
+    denominator = 1.0 + b[0]
+    
+    # Safety check for numerical singularity (should be impossible if b[0] >= 0)
+    if denominator < 1e-6:
+        return np.zeros(3)
+
+    sigma = np.zeros(3)
+    sigma[0] = b[1] / denominator
+    sigma[1] = b[2] / denominator
+    sigma[2] = b[3] / denominator
+
+    return sigma
+
+
+def get_target_quaternion(target_vec_i, boresight_vec_b=np.array([0, 0, 1])):
+    """
+    Computes the shortest-arc quaternion that rotates the boresight vector 
+    to align with the target vector.
+    
+    Args:
+        target_vec_i: Target unit vector in Inertial Frame.
+        boresight_vec_b: Boresight unit vector in Body Frame.
+        
     Returns:
-    - q_error: quaternion that rotates current attitude into desired attitude (q_err such that C_err = C_des.T @ C_BN)
-               i.e., a small q_error vector ~ [0, e/2] for small angle error.
-    - omega_error: body-frame rate error (omega_BN - C_BN @ omega_target)
+        q_target: The [w, x, y, z] quaternion representing the desired orientation.
     """
-    # normalize target_vector and guard
-    tv = np.array(target_vector, dtype=float)
-    norm_tv = np.linalg.norm(tv)
-    if norm_tv < 1e-12:
-        raise ValueError("target_vector has zero length")
-    b3_des = (tv / norm_tv)  # choose body +z to point along target (change sign if needed)
+    # Normalize inputs
+    u = boresight_vec_b / np.linalg.norm(boresight_vec_b)
+    v = target_vec_i / np.linalg.norm(target_vec_i)
+    
+    # Compute Dot Product
+    dot_prod = np.dot(u, v)
+    
+    # Handle Singularity: Vectors are 180 degrees apart (Opposite)
+    if dot_prod < -0.999999:
+        orthogonal_axis = np.cross(np.array([1, 0, 0]), u)
+        
+        if np.linalg.norm(orthogonal_axis) < 0.1:
+            orthogonal_axis = np.cross(np.array([0, 1, 0]), u)
+            
+        orthogonal_axis /= np.linalg.norm(orthogonal_axis)
+        
+        # 180 deg rotation (w=0, xyz=axis)
+        return np.array([0.0, orthogonal_axis[0], orthogonal_axis[1], orthogonal_axis[2]])
 
-    # choose a reference axis that's not collinear with b3_des
-    ref = np.array([0.0, 0.0, 1.0])
-    if abs(np.dot(ref, b3_des)) > 0.95:
-        ref = np.array([1.0, 0.0, 0.0])
+    # Half-Way Quaternion Construction
+    xyz = np.cross(u, v)
+    
+    # q_w = mag(u)*mag(v) + dot(u, v)
+    w = 1.0 + dot_prod
+    
+    # Assemble and Normalize
+    q_target = np.array([w, xyz[0], xyz[1], xyz[2]])
+    q_target /= np.linalg.norm(q_target)
+    
+    return q_target
 
-    # build desired body axes (in inertial frame)
-    b2_des = np.cross(b3_des, ref)
-    b2_norm = np.linalg.norm(b2_des)
-    if b2_norm < 1e-12:
-        # fallback if still degenerate
-        ref = np.array([0.0, 1.0, 0.0])
-        b2_des = np.cross(b3_des, ref)
-        b2_norm = np.linalg.norm(b2_des)
-        if b2_norm < 1e-12:
-            raise RuntimeError("Unable to construct desired frame (degenerate target).")
+def get_errors(q_BN, omega_BN, q_target, omega_target_i=np.zeros(3)):
+    """
+    Computes MRP attitude error and rate error.
+    """
+    # Compute DCMs
+    C_BN = EP2C(q_BN)       # Body -> Inertial
+    C_RN = EP2C(q_target)   # Reference(Target) -> Inertial
+    
+    # Compute Relative Error Matrix (Target -> Body)
+    C_err = C_BN.T @ C_RN
+    
+    # 3. Compute MRPs (Target -> Body)
+    sigma = C2MRP(C_err)
 
-    b2_des /= b2_norm
-    b1_des = np.cross(b2_des, b3_des)
-    b1_des /= np.linalg.norm(b1_des)
+    # 5. Rate Error
+    # Map inertial target rates into body frame
+    omega_target_b = C_BN.T @ omega_target_i
+    omega_error_b = omega_BN - omega_target_b
 
-    # form desired DCM: columns are body axes expressed in inertial frame
-    C_des = np.column_stack((b1_des, b2_des, b3_des))  # this is C_BN_des (body -> inertial)
-
-    # current DCM from quaternion
-    C_BN = EP2C(q_BN)
-
-    # error DCM that rotates current body frame into desired body frame:
-    C_err = C_des.T @ C_BN
-
-    # quaternion error (rotation that takes current -> desired)
-    q_err = C2EP(C_err)
-
-    # rate error: express desired rate in body frame and subtract
-    omega_des_body = C_BN.T @ omega_target  # omega_target is in inertial; map to body frame
-    omega_err = omega_BN - omega_des_body
-
-    return q_err, omega_err
+    return sigma, omega_error_b
 
 
 def target_pointing_controller(state: dict, config: dict) -> dict:
     """
     Target Pointing Attitude Controller for the deputy.
-    Computes torque commands to point the deputy's body z-axis towards a target.
     """
-    target_type = config['guidance']['attitude_guidance']['attitude_reference'].upper()
+    # Config & State Extraction
+    target_type = config.get("guidance", {}).get("attitude_guidance", {}).get("attitude_reference", "VELOCITY").upper()
     deputy_r = np.array(state.get("deputy_r", [0,0,0]))
     deputy_v = np.array(state.get("deputy_v", [0,0,0]))
-    chief_r = np.array(state.get("chief_r", [0,0,0]))
-    sun_vector = np.array(state.get("sun_vector", [1,0,0]))  # Placeholder
+    deputy_rho = np.array(state.get("deputy_rho", [0,0,0]))
+    
+    q_BN = np.array(state.get("deputy_q_BN", [1,0,0,0]))
+    omega_BN = np.array(state.get("deputy_omega_BN", [0,0,0])) # Actual Rate
 
-    # Determine target vector
+    # Determine Inertial Target Vector
     if target_type == "CHIEF":
-        target_vector = chief_r - deputy_r
-    elif target_type == "SUN":
-        target_vector = sun_vector - deputy_r
+        # Point at chief. Rho is (Deputy - Chief)
+        target_vector = -deputy_rho
     elif target_type == "NADIR":
+        # Point at Earth Center. Vector is -Position.
         target_vector = -deputy_r
     elif target_type == "VELOCITY":
         target_vector = deputy_v
     else:
         raise ValueError(f"Target pointing target '{target_type}' not recognized.")
 
-    target_vector /= np.linalg.norm(target_vector)
+    # Normalize
+    if np.linalg.norm(target_vector) > 1e-6:
+        target_vector = target_vector / np.linalg.norm(target_vector)
+    else:
+        # Handle singularity (e.g. at origin)
+        target_vector = np.array([1, 0, 0])
 
-    # Gains
+    # Control Logic
     Kp = config.get("control", {}).get("attitude_control_gains", {}).get("Kp", 0.1)
     Kd = config.get("control", {}).get("attitude_control_gains", {}).get("Kd", 0.01)
-
-    # Current attitude & angular velocity
-    q_BN = np.array(state.get("deputy_q_BN", [1,0,0,0]))
-    omega_BN = np.array(state.get("deputy_omega_BN", [0,0,0]))
-
-    # Boresight vector in body frame
     z_B = np.array(config.get("control", {}).get("body_z_axis", [0,0,1]))
-    # z_B /= np.linalg.norm(z_B)    
+
+    # Compute target quaternion
+    q_target = get_target_quaternion(target_vector, z_B)
 
     # Compute attitude and rate errors
-    error_quat, omega_BN = get_errors(q_BN, omega_BN, target_vector, np.zeros(3))
+    att_err_vec, omega_err = get_errors(q_BN, omega_BN, q_target, np.zeros(3))
 
-    # PD torque command
-    torque_cmd_deputy = -Kp * error_quat[1:] - Kd * omega_BN
-    torque_cmd_chief = np.zeros(3)  # No control for chief
+    # Compute Torque (PD Controller)
+    torque_cmd_deputy = -Kp * att_err_vec - Kd * omega_err
+    
+    # Not implemented for chief in this controller
+    torque_cmd_chief = np.zeros(3) 
 
     return {
         "torque_chief": torque_cmd_chief,
         "torque_deputy": torque_cmd_deputy,
-        "quat_error_deputy": error_quat, 
-        " rate_error_deputy": omega_BN
+        "att_error_vec": att_err_vec,   
+        "rate_error_deputy": omega_err  
     }

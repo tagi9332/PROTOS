@@ -1,7 +1,6 @@
 import numpy as np
 from data.resources.constants import MU_EARTH
-from utils.frame_conversions.rel_to_inertial_functions import LVLH_DCM, rel_vector_to_inertial, inertial_to_rel_LVLH
-from utils.orbital_dynamics.orbital_accel import grav_accel
+from utils.frame_conversions.rel_to_inertial_functions import LVLH_DCM, inertial_to_rel_LVLH
 from utils.orbital_element_conversions.oe_conversions import lroes_to_inertial
 def _get_desired_state_LVLH(frame: str, desired_state: list, r_c, v_c, sim_time):
     """
@@ -67,7 +66,7 @@ def cwh_step(state: dict, config: dict) -> dict:
     ## Guidance
     # Extract desired relative position and velocity
     rho_des, rho_dot_des = _get_desired_state_LVLH(
-        config.get("guidance", {}).get("rpo", {}).get("frame", "LVLH"),
+        config.get("guidance", {}).get("rpo", {}).get("frame", "LVLH").upper(),
         config.get("guidance", {}).get("rpo", {}).get("deputy_desired_relative_state"),
         r_chief,
         v_chief,
@@ -94,10 +93,7 @@ def cwh_step(state: dict, config: dict) -> dict:
     v_star = C_H_N @ (A2 @ rho_deputy + A1 @ rho_dot_deputy)
 
     # PD control
-    u = v_star - A1 @ rho_deputy - A2 @ rho_dot_deputy - Kp * delta_r - Kd * delta_r_dot
-
-    # Convert command acceleration to inertial frame
-    u = C_H_N.T @ u  # transpose to go from LVLH to inertial
+    u = - A1 @ rho_deputy - A2 @ rho_dot_deputy - Kp * delta_r - Kd * delta_r_dot
 
     return {
         "status": "lvlh",

@@ -1,3 +1,4 @@
+from src.controllers.cwh_controller import cwh_step
 from src.controllers.cartesian_controller import cartesian_step
 from src.controllers.mean_oe_controller import mean_oe_step
 from src.controllers.quiz_2_controller import quiz_2_step
@@ -51,6 +52,8 @@ def gnc_step(state: dict, config: dict) -> dict:
             state_out = quiz_10_step(state, config)
         elif control_method == "CARTESIAN":
             state_out = cartesian_step(state, config)
+        elif control_method == "CWH":
+            state_out = cwh_step(state, config)
         else:
             raise ValueError(f"Control method '{control_method}' not recognized for RPO guidance.")
 
@@ -64,6 +67,8 @@ def gnc_step(state: dict, config: dict) -> dict:
     # -------------------------------
     torque_cmd_chief = [0, 0, 0]
     torque_cmd_deputy = [0, 0, 0]
+    error_quat = [0, 0, 0, 0]
+    omega_BN = [0, 0, 0]
 
     if is_6dof:
         # Call attitude controller step for chief & deputy

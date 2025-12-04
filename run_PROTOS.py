@@ -23,11 +23,11 @@ def main():
     state = config.get("init_state", {})
 
     # Storage for trajectory and GNC outputs
-    trajectory = [state.copy()]  # store the initial state at t=0
+    trajectory = [state.copy()]  
     gnc_results = []
 
     # Time-stepped propagation loop 
-    for _ in enumerate(t_eval[:-1]):  # iterate over all but the last time
+    for _ in enumerate(t_eval[:-1]):  
 
         # Run GNC to compute commanded control input
         gnc_out = gnc.gnc_step(state, gnc_config)
