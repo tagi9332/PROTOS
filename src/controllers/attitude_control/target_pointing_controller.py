@@ -207,6 +207,6 @@ def target_pointing_controller(state: dict, config: dict) -> dict:
     return {
         "torque_chief": torque_cmd_chief,
         "torque_deputy": torque_cmd_deputy,
-        "att_error_vec": att_err_vec,   
+        "att_error_deputy": att_err_vec,   
         "rate_error_deputy": omega_err  
     }

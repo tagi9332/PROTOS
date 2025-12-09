@@ -41,7 +41,7 @@ def main():
         if sim_config.get("simulation_mode", "3DOF").upper() == "6DOF":
             state["torque_cmd_chief"] = gnc_out.get("torque_cmd_chief", np.zeros(3))
             state["torque_cmd_deputy"] = gnc_out.get("torque_cmd_deputy", np.zeros(3))
-            state["quat_error_deputy"] = gnc_out.get("quat_error_deputy", np.zeros(4))
+            state["att_error_deputy"] = gnc_out.get("att_error_deputy", np.zeros(4))
             state["rate_error_deputy"] = gnc_out.get("rate_error_deputy", np.zeros(3))
             
         # Propagate dynamics using control input
@@ -91,8 +91,15 @@ def main():
         state_vector = np.hstack(state_parts)
         post_dict["full_state"].append(state_vector.tolist())
 
-    # Add control accelerations to post_dict for plotting or export
+    # Add control states to post_dict for plotting or export
     post_dict["control_accel"] = gnc_results
+
+    # If 6DOF, add torque commands and attitude errors
+    if sim_config.get("simulation_mode", "3DOF").upper() == "6DOF":
+        post_dict["torque_cmd_chief"] = [res.get("torque_cmd_chief", [0,0,0]) for res in gnc_results]
+        post_dict["torque_cmd_deputy"] = [res.get("torque_cmd_deputy", [0,0,0]) for res in gnc_results]
+        post_dict["att_error_deputy"] = [res.get("att_error_deputy", [0,0,0,0]) for res in gnc_results]
+        post_dict["rate_error_deputy"] = [res.get("rate_error_deputy", [0,0,0]) for res in gnc_results]
 
     # Postprocess results
     post_process.post_process(post_dict, output_dir="data/results")

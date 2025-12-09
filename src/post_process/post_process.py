@@ -7,7 +7,7 @@ from src.post_process.plot_3d_ric_traj import plot_3d_RIC_trajectory
 from src.post_process.save_control_vector import save_control_accel
 from src.post_process.plot_dv import plot_delta_v
 from src.post_process.plot_oes import plot_orbital_elements
-from src.post_process.plot_control_effort import plot_control_accel
+from src.post_process.plot_control_effort import plot_attitude_control, plot_control_accel
 from src.post_process.plot_attitude import plot_attitude
 
 def _convert_ndarray(obj):
@@ -40,11 +40,13 @@ def post_process(results, output_dir):
     # Attitude plots
     if results_serializable["is_6dof"]:
         plot_attitude(results_serializable, output_dir)
+        plot_attitude_control(results_serializable, output_dir)
         
     # Control profiles
     save_control_accel(results_serializable, output_dir)
     plot_delta_v(results_serializable, output_dir)
     plot_control_accel(results_serializable, output_dir) # type: ignore
+
 
     # COE plots
     if coes is not None:

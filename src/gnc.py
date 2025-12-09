@@ -67,7 +67,7 @@ def gnc_step(state: dict, config: dict) -> dict:
     # -------------------------------
     torque_cmd_chief = [0, 0, 0]
     torque_cmd_deputy = [0, 0, 0]
-    error_quat = [0, 0, 0, 0]
+    error_att = [0, 0, 0, 0]
     omega_BN = [0, 0, 0]
 
     if is_6dof:
@@ -76,7 +76,7 @@ def gnc_step(state: dict, config: dict) -> dict:
         att_cmds = attitude_step(state, config)
         torque_cmd_chief = att_cmds.get("torque_chief", [0,0,0])
         torque_cmd_deputy = att_cmds.get("torque_deputy", [0,0,0])
-        error_quat = att_cmds.get("quat_error_deputy", [0,0,0,0])
+        error_att = att_cmds.get("att_error_deputy", [0,0,0,0])
         omega_BN = att_cmds.get("rate_error_deputy", [0,0,0])
 
     # -------------------------------
@@ -90,7 +90,7 @@ def gnc_step(state: dict, config: dict) -> dict:
         gnc_out_dict.update({
             "torque_cmd_chief": torque_cmd_chief,
             "torque_cmd_deputy": torque_cmd_deputy,
-            "quat_error_deputy": error_quat, 
+            "att_error_deputy": error_att, 
             "rate_error_deputy": omega_BN
         })
 

@@ -4,7 +4,7 @@ from utils.frame_conversions.rel_to_inertial_functions import LVLH_DCM, inertial
 from utils.orbital_element_conversions.oe_conversions import lroes_to_inertial
 def _get_desired_state_LVLH(frame: str, desired_state: list, r_c, v_c, sim_time):
     """
-    Extract desired relative state in LVLH frame from configuration.
+    Extract desired relative state in LVLH frame from configuration. Currently not behaving correctly
     """
 
     if frame == "LVLH":
@@ -93,7 +93,7 @@ def cwh_step(state: dict, config: dict) -> dict:
     v_star = C_H_N @ (A2 @ rho_deputy + A1 @ rho_dot_deputy)
 
     # PD control
-    u = - A1 @ rho_deputy - A2 @ rho_dot_deputy - Kp * delta_r - Kd * delta_r_dot
+    u = v_star- A1 @ rho_deputy - A2 @ rho_dot_deputy - Kp * delta_r - Kd * delta_r_dot
 
     return {
         "status": "lvlh",
