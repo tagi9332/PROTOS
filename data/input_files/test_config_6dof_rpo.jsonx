@@ -3,7 +3,7 @@
   
     "simulation": {
     "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC
-    "duration": 3000,                  // simulation duration in seconds
+    "duration": 300,                  // simulation duration in seconds
     "time_step": 0.05,                   // simulation time step in seconds
     "propagator": "2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
     "simulation_mode": "6DOF",    // options: 3DOF, 6DOF

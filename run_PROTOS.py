@@ -3,105 +3,55 @@ Main entry point for PROTOS simulation framework.
 """
 from datetime import timedelta
 import numpy as np
-from src.post_process import post_process
-from src.io_utils import init_PROTOS
+
 from src import dynamics, gnc
+from src.io_utils import init_PROTOS
+from src.post_process import post_process, package_simulation_results
+from utils.six_dof_utils import update_state_with_gnc
 
 def main():
-    # Parse input
+    # --- Initialization ---
     config = init_PROTOS.parse_input("data/input_files/test_config_6dof_rpo.jsonx")
     sim_config = config["simulation"]
     dyn_config = config["dynamics"]
     gnc_config = config["gnc"]
 
-    # Extract simulation parameters
     dt = sim_config.get("time_step", 1)
     t_eval = np.array(config.get("t_eval"))
     initial_epoch = sim_config.get("epoch")
+    is_6dof = sim_config.get("simulation_mode", "3DOF").upper() == "6DOF"
 
-    # Initialize state
     state = config.get("init_state", {})
-
-    # Storage for trajectory and GNC outputs
-    trajectory = [state.copy()]  
+    trajectory = [state.copy()]
     gnc_results = []
 
-    # Time-stepped propagation loop 
-    for _ in enumerate(t_eval[:-1]):  
-
-        # Run GNC to compute commanded control input
+    # --- Propagation Loop ---
+    for _ in t_eval[:-1]:
+        # GNC Step
         gnc_out = gnc.gnc_step(state, gnc_config)
-
-        # Store GNC output
         gnc_results.append(gnc_out)
 
-        # Extract translational and rotational commands from the dictionary
-        control_accel = gnc_out.get("accel_cmd", np.zeros(3))
-        state["control_accel"] = control_accel
-        if sim_config.get("simulation_mode", "3DOF").upper() == "6DOF":
-            state["torque_cmd_chief"] = gnc_out.get("torque_cmd_chief", np.zeros(3))
-            state["torque_cmd_deputy"] = gnc_out.get("torque_cmd_deputy", np.zeros(3))
-            state["att_error_deputy"] = gnc_out.get("att_error_deputy", np.zeros(4))
-            state["rate_error_deputy"] = gnc_out.get("rate_error_deputy", np.zeros(3))
-            
-        # Propagate dynamics using control input
+        # Update State with GNC Outputs
+        update_state_with_gnc(state, gnc_out, is_6dof)
+
+        # Dynamics Step
         next_state = dynamics.dyn_step(dt, state, dyn_config)
 
-        # Increment time and update state fields
-        prev_sim_time = state.get("sim_time", 0.0)
-        prev_epoch = state.get("epoch", initial_epoch)
+        # Update Time & Epoch
+        next_state["sim_time"] = np.array(state.get("sim_time", 0.0) + dt, dtype=np.float64)
+        next_state["epoch"] = state.get("epoch", initial_epoch) + timedelta(seconds=dt) # type: ignore
 
-        next_state["sim_time"] = np.float64(prev_sim_time + dt) # type: ignore
-        next_state["epoch"] = prev_epoch + timedelta(seconds=dt) # type: ignore
-
-        # Store propagated state and set it for next iteration
+        # Store & Advance
         trajectory.append(next_state)
         state = next_state
 
-    # Execute and store final GNC step (not commanded)
+    # --- Finalize ---
     final_gnc = gnc.gnc_step(state, gnc_config)
     final_gnc["control_accel"] = final_gnc.get("accel_cmd", np.zeros(3))
     gnc_results.append(final_gnc)
 
-    # Prepare postprocess-compatible dictionaries
-    post_dict = {"time": t_eval.tolist(), "full_state": []}
-
-    # Build the "full_state" list
-    for res in trajectory:
-        # Build full state vector
-        state_parts = [
-            res["chief_r"],
-            res["chief_v"],
-            res["deputy_r"],
-            res["deputy_v"],
-            res["deputy_rho"],
-            res["deputy_rho_dot"],
-        ]
-
-        # Add attitude states if 6DOF
-        if sim_config.get("simulation_mode", "3DOF").upper() == "6DOF":
-            state_parts.extend([
-                np.array(res.get("chief_q_BN", np.zeros(4))),
-                np.array(res.get("chief_omega_BN", np.zeros(3))),
-                np.array(res.get("deputy_q_BN", np.zeros(4))),
-                np.array(res.get("deputy_omega_BN", np.zeros(3)))
-            ])
-
-        # Flatten and append to post_dict
-        state_vector = np.hstack(state_parts)
-        post_dict["full_state"].append(state_vector.tolist())
-
-    # Add control states to post_dict for plotting or export
-    post_dict["control_accel"] = gnc_results
-
-    # If 6DOF, add torque commands and attitude errors
-    if sim_config.get("simulation_mode", "3DOF").upper() == "6DOF":
-        post_dict["torque_cmd_chief"] = [res.get("torque_cmd_chief", [0,0,0]) for res in gnc_results]
-        post_dict["torque_cmd_deputy"] = [res.get("torque_cmd_deputy", [0,0,0]) for res in gnc_results]
-        post_dict["att_error_deputy"] = [res.get("att_error_deputy", [0,0,0,0]) for res in gnc_results]
-        post_dict["rate_error_deputy"] = [res.get("rate_error_deputy", [0,0,0]) for res in gnc_results]
-
-    # Postprocess results
+    # --- Post Processing ---
+    post_dict = package_simulation_results(trajectory, gnc_results, t_eval, is_6dof)
     post_process.post_process(post_dict, output_dir="data/results")
 
 if __name__ == "__main__":
