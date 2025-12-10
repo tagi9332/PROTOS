@@ -18,7 +18,7 @@ Key Features
   * CWH (Clohessy-Wiltshire-Hill equations)
   * 2BODY (full two-body orbital propagation)
   * LINEARIZED_2BODY (linearized relative two-body dynamics)
-  * TH (Tschauner-Hempel equations) (!TODO!)
+  * TH (Tschauner-Hempel equations)
 - Selectable GNC controllers:
   * Cartesian Continuous Feedback
   * Orbit Element Difference Continuous Feedback
