@@ -1,0 +1,61 @@
+{
+    "scenario": "Configuration for Project 1 Task 4",
+    "simulation": {
+        "epoch": "2000-01-01T12:00:00Z",
+        "duration": 86400,
+        "time_step": 1,
+        "propagator": "TH",
+        "perturbations": {
+            "J2": true,
+            "drag": false,
+            "SRP": false
+        }
+    },
+    "satellites": [
+        {
+            "name": "Chief",
+            "initial_state": {
+                "state": [
+                    7278.0,
+                    0.005,
+                    0,
+                    0,
+                    0,
+                    0
+                ],
+                "frame": "OEs"
+            },
+            "properties": {
+                "mass": 500.0,
+                "area": 10.0,
+                "Cd": 2.2
+            }
+        },
+        {
+            "name": "Deputy",
+            "initial_state": {
+                "state": [
+                    0.05,
+                    0.0,
+                    1.5708,
+                    0,
+                    0,
+                    0
+                ],
+                "frame": "LROEs"
+            },
+            "properties": {
+                "mass": 250.0,
+                "area": 10.0,
+                "Cd": 2.2
+            }
+        }
+    ],
+    "output": {
+        "save_trajectory": true,
+        "save_gnc_results": true,
+        "trajectory_file": "data/results/two_satellite_sim/trajectory.csv",
+        "gnc_file": "data/results/two_satellite_sim/gnc_results.csv",
+        "plots": true
+    }
+}

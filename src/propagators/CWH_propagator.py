@@ -16,7 +16,9 @@ def step_cwh(state: dict, dt: float, config: dict):
 
     sim = config.get("simulation", {})
     perturb_config = sim.get("perturbations", {})
-    epoch = state.get("epoch")
+    epoch = state["epoch"] 
+    if epoch is None:
+        raise ValueError("Simulation 'epoch' is required for SRP perturbation modeling.")
     
     sat_props = config.get("satellite_properties", {})
     chief_props = sat_props.get("chief", {})
@@ -25,8 +27,8 @@ def step_cwh(state: dict, dt: float, config: dict):
     chief_mass = chief_props.get("mass", 500.0)
     deputy_mass = deputy_props.get("mass", 250.0)
     
-    chief_drag = {"cd": chief_props.get("Cd", 2.2), "area": chief_props.get("area", 1.0)}
-    deputy_drag = {"cd": deputy_props.get("Cd", 2.2), "area": deputy_props.get("area", 1.0)}
+    chief_drag = {"Cd": chief_props.get("Cd", 2.2), "area": chief_props.get("area", 1.0)}
+    deputy_drag = {"Cd": deputy_props.get("Cd", 2.2), "area": deputy_props.get("area", 1.0)}
 
     # -------------------------------
     # Dynamics functions for RK4
@@ -44,7 +46,7 @@ def step_cwh(state: dict, dt: float, config: dict):
 
         # Chief Dynamics (ECI)
         a_chief_2body = -MU_EARTH * c_r / c_r_mag**3
-        a_pert_chief_eci = compute_perturb_accel(c_r, c_v, perturb_config, chief_drag, chief_mass, epoch) # type: ignore
+        a_pert_chief_eci = compute_perturb_accel(c_r, c_v, perturb_config, chief_drag, chief_mass, epoch)
         
         a_chief_total_eci = a_chief_2body + a_pert_chief_eci
 
@@ -73,7 +75,7 @@ def step_cwh(state: dict, dt: float, config: dict):
         dep_v_eci = c_v + C_HN.T @ (np.cross(omega_eci, curr_rho) + curr_rho_dot)
 
         # Compute Deputy Perturbations in ECI
-        a_pert_deputy_eci = compute_perturb_accel(dep_r_eci, dep_v_eci, perturb_config, deputy_drag, deputy_mass, epoch) # type: ignore
+        a_pert_deputy_eci = compute_perturb_accel(dep_r_eci, dep_v_eci, perturb_config, deputy_drag, deputy_mass, epoch)
 
         # Compute Differential Acceleration in ECI
         a_diff_eci = a_pert_deputy_eci - a_pert_chief_eci

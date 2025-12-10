@@ -8,8 +8,8 @@
     "time_step": 1,                   // seconds
     "propagator": "CWH",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
     "perturbations": {
-      "J2": false,
-      "drag": false,
+      "J2": true,
+      "drag": true,
       "SRP": false
     }
   },
@@ -18,7 +18,7 @@
     {
       "name": "Chief",
       "initial_state": {
-        "state": [8000,0,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
+        "state": [6800,0,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
         "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])      
       },
       "properties": {

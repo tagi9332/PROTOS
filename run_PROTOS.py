@@ -11,7 +11,7 @@ from utils.six_dof_utils import update_state_with_gnc
 
 def main():
     # --- Initialization ---
-    config = init_PROTOS.parse_input("data/input_files/project_task_1.jsonx")
+    config = init_PROTOS.parse_input("data/input_files/project_task_4.jsonx")
     sim_config = config["simulation"]
     dyn_config = config["dynamics"]
     gnc_config = config["gnc"]

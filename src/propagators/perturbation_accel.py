@@ -51,7 +51,7 @@ def compute_perturb_accel(r: np.ndarray, v: np.ndarray, perturb_config: dict,
         v_mag_m_s = np.linalg.norm(v_m_s)
 
         if v_mag_m_s > 0:
-            Cd = drag_properties.get("cd")
+            Cd = drag_properties.get("Cd")
             A_m = drag_properties.get("area")  # m^2
 
             # Density in kg/m^3

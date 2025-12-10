@@ -22,10 +22,12 @@ def step_2body(state: dict, dt: float, config: dict):
     chief_mass = config.get("satellites", {}).get("chief", {}).get("mass", 250.0)
     deputy_mass = config.get("satellites", {}).get("deputy", {}).get("mass", 500.0)
 
-    chief_drag = {"cd": chief_props.get("Cd", 2.2), "area": chief_props.get("area", 1.0)}
-    deputy_drag = {"cd": deputy_props.get("Cd", 2.2), "area": deputy_props.get("area", 1.0)}
+    chief_drag = {"Cd": chief_props.get("Cd", 2.2), "area": chief_props.get("area", 1.0)}
+    deputy_drag = {"Cd": deputy_props.get("Cd", 2.2), "area": deputy_props.get("area", 1.0)}
 
-    epoch = state.get("epoch")
+    epoch = state.get("epoch", None)
+    if epoch is None:
+        raise ValueError("Simulation 'epoch' is required for SRP perturbation modeling.")
 
     # -------------------------------
     # Dynamics functions for RK4
@@ -36,7 +38,7 @@ def step_2body(state: dict, dt: float, config: dict):
         r_mag = np.linalg.norm(r)
 
         a = -MU_EARTH * r / r_mag**3
-        a += compute_perturb_accel(r, v, perturb_config, chief_drag, chief_mass, epoch) # type: ignore
+        a += compute_perturb_accel(r, v, perturb_config, chief_drag, chief_mass, epoch)
 
         return np.hstack((v, a))
 
@@ -46,7 +48,7 @@ def step_2body(state: dict, dt: float, config: dict):
         r_mag = np.linalg.norm(r)
 
         a = -MU_EARTH * r / r_mag**3
-        a += compute_perturb_accel(r, v, perturb_config, deputy_drag, deputy_mass, epoch) # type: ignore
+        a += compute_perturb_accel(r, v, perturb_config, deputy_drag, deputy_mass, epoch)
         a += u_ctrl   # control only acts on deputy
 
         return np.hstack((v, a))
