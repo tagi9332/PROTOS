@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import plotly.graph_objects as go
+from mpl_toolkits.mplot3d import Axes3D  # Required for 3D plotting
 
 def plot_3d_RIC_trajectory(results_serializable, output_dir, show_plot=True):
     """

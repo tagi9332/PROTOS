@@ -107,6 +107,4 @@ def plot_attitude(results_serializable, output_dir):
     fig.suptitle("Body Angular Rates for Chief and Deputy")
     fig.tight_layout()
     fig.savefig(os.path.join(output_dir, "attitude_rates.png"), dpi=200)
-    plt.close(fig)
 
-    print("Saved: attitude_quaternions.png and attitude_rates.png")

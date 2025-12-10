@@ -1,115 +1,114 @@
-## CWH relative motion propagator
 import numpy as np
+from utils.numerical_methods.rk4 import rk54
 from src.propagators.perturbation_accel import compute_perturb_accel
-from utils.frame_conversions.rel_to_inertial_functions import LVLH_DCM, rel_vector_to_inertial
+from utils.frame_conversions.rel_to_inertial_functions import LVLH_DCM, compute_omega
 from data.resources.constants import MU_EARTH
 
 def step_cwh(state: dict, dt: float, config: dict):
+
     chief_r = state["chief_r"]
     chief_v = state["chief_v"]
-    deputy_r = state["deputy_r"]
-    deputy_v = state["deputy_v"]
-    deputy_rho = state["deputy_rho"]
-    deputy_rho_dot = state["deputy_rho_dot"]
+    deputy_rho = state["deputy_rho"]          # relative position in LVLH
+    deputy_rho_dot = state["deputy_rho_dot"]  # relative velocity in LVLH
+    
+    # Control inputs for CWH must be given in LVLH frame
+    u_ctrl = state.get("control_accel", np.zeros(3))
 
-    # Simulation and perturbations config
-    epoch = state.get("epoch")
     sim = config.get("simulation", {})
     perturb_config = sim.get("perturbations", {})
-
-    # Satellite configs
+    epoch = state.get("epoch")
+    
     sat_props = config.get("satellite_properties", {})
     chief_props = sat_props.get("chief", {})
     deputy_props = sat_props.get("deputy", {})
 
-    # Masses (TODO: Not currently working, default to 250kg and 500kg)
-    chief_mass = config.get("satellites", {}).get("chief", {}).get("mass", 250.0)
-    deputy_mass = config.get("satellites", {}).get("deputy", {}).get("mass", 500.0)
+    chief_mass = chief_props.get("mass", 500.0)
+    deputy_mass = deputy_props.get("mass", 250.0)
+    
+    chief_drag = {"cd": chief_props.get("Cd", 2.2), "area": chief_props.get("area", 1.0)}
+    deputy_drag = {"cd": deputy_props.get("Cd", 2.2), "area": deputy_props.get("area", 1.0)}
 
-    # Drag-related properties (inside 'properties')
-    chief_drag_properties = {
-        "cd": chief_props.get("Cd", 2.2),
-        "area": chief_props.get("area", 1.0)
-    }
-    deputy_drag_properties = {
-        "cd": deputy_props.get("Cd", 2.2),
-        "area": deputy_props.get("area", 1.0)
-    }
+    # -------------------------------
+    # Dynamics functions for RK4
+    # -------------------------------
+    # State Vector Y = [Chief_r(3), Chief_v(3), Rho(3), Rho_dot(3)]
+    
+    def combined_dynamics(y):
+        # Unpack current integration step states
+        c_r = y[0:3]
+        c_v = y[3:6]
+        c_r_mag = np.linalg.norm(c_r)
+        
+        curr_rho = y[6:9]
+        curr_rho_dot = y[9:12]
 
-    # Mean motion (assume circular chief orbit)
-    r_mag = np.linalg.norm(chief_r)
-    n = np.sqrt(MU_EARTH / r_mag**3)
+        # Chief Dynamics (ECI)
+        a_chief_2body = -MU_EARTH * c_r / c_r_mag**3
+        a_pert_chief_eci = compute_perturb_accel(c_r, c_v, perturb_config, chief_drag, chief_mass, epoch) # type: ignore
+        
+        a_chief_total_eci = a_chief_2body + a_pert_chief_eci
 
-    x, y, z = deputy_rho
-    vx, vy, vz = deputy_rho_dot
+        # CWH Dynamics (LVLH)
+        # Calculate instantaneous mean motion 'n' based on current radius
+        n = np.sqrt(MU_EARTH / c_r_mag**3)
 
-    # CWH accelerations
-    ax = 3 * n**2 * x + 2 * n * vy
-    ay = -2 * n * vx
-    az = -n**2 * z
+        x, y, z = curr_rho
+        xd, yd, _ = curr_rho_dot
 
-    if perturb_config.get("J2", False) or perturb_config.get("drag", False) or perturb_config.get("SRP", False):
-        # Compute perturbation accelerations if enabled
-        # Chief perturbations
-        a_pert_chief_inertial = compute_perturb_accel(chief_r, chief_v, perturb_config, chief_drag_properties, chief_mass, epoch) # type: ignore
+        # Standard CWH (unperturbed) accelerations
+        ax_cwh = 2*n*yd + 3*n**2*x
+        ay_cwh = -2*n*xd
+        az_cwh = -n**2*z
+        a_cwh_natural = np.array([ax_cwh, ay_cwh, az_cwh])
 
-        # Deputy perturbations
-        a_pert_deputy_inertial = compute_perturb_accel(deputy_r, deputy_v, perturb_config, deputy_drag_properties, deputy_mass, epoch) # type: ignore
+        # Perturbation Handling (Differential)
+        # Reconstruct Deputy State in ECI to calculate its perturbations
+        C_HN = LVLH_DCM(c_r, c_v) # Inertial -> LVLH Rotation Matrix
+        
+        # Deputy Position ECI: r_dep = r_chief + C_NB^T * rho
+        dep_r_eci = c_r + C_HN.T @ curr_rho
+        
+        # Deputy Velocity ECI: v_dep = v_chief + C_NB^T * (omega x rho + rho_dot)
+        omega_eci = compute_omega(c_r, c_v) # Angular velocity of LVLH frame wrt Inertial
+        dep_v_eci = c_v + C_HN.T @ (np.cross(omega_eci, curr_rho) + curr_rho_dot)
 
-        # Compute differential perturbation acceleration
-        a_diff_inertial = a_pert_deputy_inertial - a_pert_chief_inertial
+        # Compute Deputy Perturbations in ECI
+        a_pert_deputy_eci = compute_perturb_accel(dep_r_eci, dep_v_eci, perturb_config, deputy_drag, deputy_mass, epoch) # type: ignore
 
-        # Transform differential perturbation to LVLH frame
-        # Compute DCM from inertial to LVLH
-        C_HN = LVLH_DCM(chief_r, chief_v)
+        # Compute Differential Acceleration in ECI
+        a_diff_eci = a_pert_deputy_eci - a_pert_chief_eci
 
-        # Compute omega and omega_dot
-        h_chief = np.cross(chief_r, chief_v)
-        f_dot = h_chief / np.linalg.norm(chief_r)**2
-        f_ddot = -2 * np.dot(chief_v,[1,0,0]) / np.linalg.norm(chief_r) * f_dot
+        # Rotate Differential Acceleration into LVLH
+        a_diff_lvlh = C_HN @ a_diff_eci
 
-        # Compute Coriolis acceleration correction
-        at1 = -2 * np.cross(f_dot, deputy_rho_dot)
+        # Total Relative Acceleration
+        a_rel_total_lvlh = a_cwh_natural + a_diff_lvlh + u_ctrl
 
-        # Compute centrifugal acceleration correction
-        at2 = - np.cross(f_dot, np.cross(f_dot, deputy_rho))
+        # Return concatenated derivatives [v_chief, a_chief, rho_dot, rho_ddot]
+        return np.hstack((c_v, a_chief_total_eci, curr_rho_dot, a_rel_total_lvlh))
 
-        # Compute Euler acceleration correction
-        at3 = - np.cross(f_ddot, deputy_rho)
 
-        a_diff = C_HN @ a_diff_inertial + at1 + at2 + at3  # transform to LVLH
+    # -------------------------------
+    # RK4 Integration
+    # -------------------------------
+    full_state = np.hstack((chief_r, chief_v, deputy_rho, deputy_rho_dot))
+    next_full_state = rk54(combined_dynamics, full_state, dt)
 
-        # Add differential perturbation to relative accelerations
-        ax += a_diff[0]
-        ay += a_diff[1]
-        az += a_diff[2]
+    # -------------------------------
+    # Unpack and Return
+    # -------------------------------
+    chief_r_next = next_full_state[0:3]
+    chief_v_next = next_full_state[3:6]
+    deputy_rho_next = next_full_state[6:9]
+    deputy_rho_dot_next = next_full_state[9:12]
 
-    # Add control acceleration if present
-    control_accel = state.get("control_accel", np.zeros(3))
+    # Reconstruct Deputy ECI
+    C_HN_next = LVLH_DCM(chief_r_next, chief_v_next)
+    deputy_r_next = chief_r_next + C_HN_next.T @ deputy_rho_next
+    
+    omega_next = compute_omega(chief_r_next, chief_v_next)
+    deputy_v_next = chief_v_next + C_HN_next.T @ (np.cross(omega_next, deputy_rho_next) + deputy_rho_dot_next)
 
-    # Add control acceleration to relative accelerations
-    ax += control_accel[0]
-    ay += control_accel[1]
-    az += control_accel[2]
-
-    # Euler integration of relative state for one step
-    deputy_rho_next = deputy_rho + deputy_rho_dot * dt
-    deputy_rho_dot_next = deputy_rho_dot + np.array([ax, ay, az]) * dt
-
-    # Propagate chief using keplerian motion (circular orbit)
-    theta = n * dt
-    cos_theta = np.cos(theta)
-    sin_theta = np.sin(theta)
-    STM = np.array([[cos_theta, -sin_theta, 0],
-                  [sin_theta,  cos_theta, 0],
-                  [0,          0,         1]])
-    chief_r_next = STM @ chief_r
-    chief_v_next = STM @ chief_v
-
-    # Update deputy inertial position and velocity
-    deputy_r_next, deputy_v_next = rel_vector_to_inertial(deputy_rho_next, deputy_rho_dot_next, chief_r_next, chief_v_next)
-
-        # Return updated state as dictionary
     return {
         "chief_r": chief_r_next,
         "chief_v": chief_v_next,

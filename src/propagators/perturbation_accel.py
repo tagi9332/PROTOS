@@ -61,7 +61,7 @@ def compute_perturb_accel(r: np.ndarray, v: np.ndarray, perturb_config: dict,
             a_drag_m_s2 = -0.5 * Cd * A_m / mass * rho_kgm3 * v_mag_m_s * v_m_s # type: ignore
 
             # Convert to km/s^2
-            a_drag = a_drag_m_s2 / 1000.0
+            a_drag = a_drag_m_s2 / (1000.0**2)
 
             a_pert += a_drag
 

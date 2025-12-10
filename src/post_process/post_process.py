@@ -1,9 +1,11 @@
 import os
 import numpy as np
+from src.post_process.plot_relative_separation import plot_relative_separation
 from src.post_process.save_full_state import save_state_csv
 from src.post_process.save_element_vectors import save_orbital_elements
 from src.post_process.plot_eci_traj import plot_ECI_trajectories
 from src.post_process.plot_3d_ric_traj import plot_3d_RIC_trajectory
+from src.post_process.plot_ric_traj import save_plane_views, save_iso_view
 from src.post_process.save_control_vector import save_control_accel
 from src.post_process.plot_dv import plot_delta_v
 from src.post_process.plot_oes import plot_orbital_elements
@@ -54,7 +56,14 @@ def post_process(results, output_dir):
         time = np.array(results_serializable["time"], dtype=float) # type: ignore
         plot_orbital_elements(time, chief, deputy, delta, output_dir)
 
-    print(f"Postprocess completed. Output saved in {output_dir}")
+    # Save static plane views of RIC-frame trajectory
+    save_plane_views(results_serializable, output_dir)
+    save_iso_view(results_serializable, output_dir)
+
+    # Plot relative separation
+    plot_relative_separation(results_serializable, output_dir)
 
     # Open RIC-frame plot in interactive window
     plot_3d_RIC_trajectory(results_serializable, output_dir, show_plot=True)
+
+    print(f"Postprocess completed. Output saved in {output_dir}")

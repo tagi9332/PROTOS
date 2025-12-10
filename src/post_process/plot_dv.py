@@ -83,5 +83,3 @@ def plot_delta_v(results_serializable, output_dir):
     fig.tight_layout()
     plt.savefig(os.path.join(output_dir, "cumulative_delta_v_plot.png"))
     plt.close(fig)
-
-    print("Δv plots saved.")

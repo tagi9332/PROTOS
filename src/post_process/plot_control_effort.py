@@ -67,7 +67,6 @@ def plot_control_accel(results_serializable: dict, output_dir: str, filename: st
     fig.savefig(filepath, dpi=150)
     plt.close(fig)
 
-    print(f"Control acceleration plot saved to: {filepath}")
 
 
 def plot_attitude_control(results_serializable: dict, output_dir: str, filename: str = "attitude_control_summary.png"):
@@ -187,5 +186,3 @@ def plot_attitude_control(results_serializable: dict, output_dir: str, filename:
     fig.tight_layout(rect=[0, 0.03, 1, 0.97]) # Adjust layout for suptitle
     fig.savefig(filepath, dpi=150)
     plt.close(fig)
-
-    print(f"Control summary plot saved to: {filepath}")

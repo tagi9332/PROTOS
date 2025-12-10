@@ -1,0 +1,55 @@
+{
+  "scenario": "Configuration for Project 1 Task 1",
+  
+    "simulation": {
+    "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC
+    // "duration": 21600,                  // seconds
+    "duration": 86400,                  // seconds
+    "time_step": 1,                   // seconds
+    "propagator": "CWH",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
+    "perturbations": {
+      "J2": true,
+      "drag": true,
+      "SRP": false
+    }
+  },
+
+"satellites": [
+    {
+      "name": "Chief",
+      "initial_state": {
+        "state": [6800,0,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
+        "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])      
+      },
+      "properties": {
+        "mass": 500.0,
+        "area": 10.0,
+        "Cd": 2.2
+      }
+    },
+    {
+      "name": "Deputy",
+    "initial_state": {
+      "state": [0.05, 0.05, 1.5708, 0, 0, 0], 
+      "frame": "LROEs"
+      // "state": [-81.22301,248.14201,94.95904, 0.47884, 0.14857, 0.13577], // km, km/s in ECI frame, degrees for OEs
+      // "frame": "LVLH"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+      
+      },
+      "properties": {
+        "mass": 250.0,
+        "area": 10.0,
+        "Cd": 2.2
+      }
+    }
+  ],
+
+
+  "output": {
+    "save_trajectory": true,
+    "save_gnc_results": true,
+    "trajectory_file": "data/results/two_satellite_sim/trajectory.csv",
+    "gnc_file": "data/results/two_satellite_sim/gnc_results.csv",
+    "plots": true
+  }
+}

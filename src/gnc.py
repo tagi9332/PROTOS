@@ -5,10 +5,6 @@ import numpy as np
 from src.controllers.cwh_controller import cwh_step
 from src.controllers.cartesian_controller import cartesian_step
 from src.controllers.mean_oe_controller import mean_oe_step
-from src.controllers.quiz_2_controller import quiz_2_step
-from src.controllers.quiz_3_controller import quiz_3_step
-from src.controllers.quiz_8_controller import quiz_8_step
-from src.controllers.quiz_10_controller import quiz_10_step
 from src.controllers.attitude_control.attitude_controller import attitude_step
 
 # Map config strings to functions
@@ -16,10 +12,6 @@ TRANSLATIONAL_CONTROLLERS = {
     "CWH": cwh_step,
     "CARTESIAN": cartesian_step,
     "MEAN_OES": mean_oe_step,
-    "QUIZ_2": quiz_2_step,
-    "QUIZ_3": quiz_3_step,
-    "QUIZ_8": quiz_8_step,
-    "QUIZ_10": quiz_10_step,
 }
 
 def gnc_step(state: dict, config: dict) -> dict:
