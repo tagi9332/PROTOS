@@ -1,7 +1,7 @@
 import numpy as np
-from utils.numerical_methods.rk4 import rk54
 from src.propagators.perturbation_accel import compute_perturb_accel
 from utils.frame_conversions.rel_to_inertial_functions import LVLH_DCM, compute_omega
+from utils.numerical_methods.rk4 import rk54
 from data.resources.constants import MU_EARTH
 
 def step_2body(state: dict, dt: float, config: dict):
@@ -26,8 +26,6 @@ def step_2body(state: dict, dt: float, config: dict):
     deputy_drag = {"Cd": deputy_props.get("Cd", 2.2), "area": deputy_props.get("area", 1.0)}
 
     epoch = state.get("epoch", None)
-    if epoch is None:
-        raise ValueError("Simulation 'epoch' is required for SRP perturbation modeling.")
 
     # -------------------------------
     # Dynamics functions for RK4

@@ -1,16 +1,20 @@
 import os
 import numpy as np
-from src.post_process.plot_relative_separation import plot_relative_separation
-from src.post_process.save_full_state import save_state_csv
-from src.post_process.save_element_vectors import save_orbital_elements
-from src.post_process.plot_eci_traj import plot_ECI_trajectories
-from src.post_process.plot_3d_ric_traj import plot_3d_RIC_trajectory
-from src.post_process.plot_ric_traj import save_plane_views, save_iso_view
-from src.post_process.save_control_vector import save_control_accel
-from src.post_process.plot_dv import plot_delta_v
-from src.post_process.plot_oes import plot_orbital_elements
-from src.post_process.plot_control_effort import plot_attitude_control, plot_control_accel
-from src.post_process.plot_attitude import plot_attitude
+from src.post_process import (
+    plot_relative_separation,
+    save_state_csv,
+    save_orbital_elements,
+    plot_ECI_trajectories,
+    plot_3d_RIC_trajectory,
+    save_plane_views,
+    save_iso_view,
+    save_control_accel,
+    plot_delta_v,
+    plot_orbital_elements,
+    plot_attitude_control,
+    plot_control_accel,
+    plot_attitude
+)
 
 def _convert_ndarray(obj):
     if isinstance(obj, dict):
@@ -25,6 +29,7 @@ def post_process(results, output_dir):
 
     os.makedirs(output_dir, exist_ok=True)
     results_serializable = _convert_ndarray(results)
+    assert (isinstance(results_serializable, dict))
 
     # Detect 6DOF by length of full_state vector
     init_state = results_serializable["full_state"][0]

@@ -1,18 +1,18 @@
 """
 Dynamics Propagation Module
 """
-from src.propagators.CWH_propagator import step_cwh
-from src.propagators.TH_propagator import step_th
-from src.propagators.two_body_propagator import step_2body
-from src.propagators.lin_rel_motion_propagator import step_linearized_2body
-from src.propagators.quaternion_integrator import q_step
+from src.propagators import (
+    step_cwh,
+    step_th,
+    step_2body,
+    q_step
+)
 
 # 1. Registry: Map config strings to propagator functions
 PROPAGATOR_REGISTRY = {
     "CWH": step_cwh,
     "TH": step_th,
     "2BODY": step_2body,
-    "LINEARIZED_2BODY": step_linearized_2body,
 }
 
 def dyn_step(dt: float, state: dict, config: dict) -> dict:

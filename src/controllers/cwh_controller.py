@@ -4,7 +4,7 @@ from utils.frame_conversions.rel_to_inertial_functions import LVLH_DCM, inertial
 from utils.orbital_element_conversions.oe_conversions import lroes_to_inertial
 def _get_desired_state_LVLH(frame: str, desired_state: list, r_c, v_c, sim_time):
     """
-    Extract desired relative state in LVLH frame from configuration. Currently not behaving correctly
+    Extract desired relative state in LVLH frame from configuration. **Currently not behaving correctly**
     """
 
     if frame == "LVLH":

@@ -1,15 +1,15 @@
 {
-  "scenario": "CWH Regression Test Configuration",
+  "scenario": "Configuration for Project 1 Task 1",
   
     "simulation": {
     "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC
-    "duration": 1300,                  // seconds
+    "duration": 86400,                  // seconds
     "time_step": 1,                   // seconds
     "propagator": "CWH",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
     "perturbations": {
       "J2": false,
       "drag": false,
-      "solar_pressure": false
+      "SRP": false
     }
   },
 
@@ -17,11 +17,11 @@
     {
       "name": "Chief",
       "initial_state": {
-        "state": [6800, 0, 0, 0, 0, 0], // km, km/s in ECI frame, degrees for OEs
-        "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])
+        "state": [8000,0,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
+        "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])      
       },
-      "mass": 500.0,
       "properties": {
+        "mass": 500.0,
         "area": 10.0,
         "Cd": 2.2
       }
@@ -29,13 +29,13 @@
     {
       "name": "Deputy",
     "initial_state": {
-      "state": [1.299038,-1,0.3213938, -0.000844437, -0.00292521, -0.000431250], // km, km/s in ECI frame, degrees for OEs
-      "frame": "LVLH"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])      
+      "state": [0.05, 0.05, 1.5708, 0, 0, 0], 
+      "frame": "LROEs"      
       },
-      "mass": 300.0,
       "properties": {
-        "area": 5.0,
-        "Cd": 2.0
+        "mass": 250.0,
+        "area": 10.0,
+        "Cd": 2.2
       }
     }
   ],
@@ -49,5 +49,3 @@
     "plots": true
   }
 }
-
-

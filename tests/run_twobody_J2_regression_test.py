@@ -31,7 +31,6 @@ for Earth orbit propagation including second zonal harmonic perturbations.
 
 import os
 import sys
-import numpy as np
 
 
 # -------------------------------------------------------------------
@@ -41,42 +40,56 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 sys.path.append(PROJECT_ROOT)
 
-from src.io_utils import init_PROTOS
+import numpy as np
+from datetime import timedelta
 from src import dynamics, gnc
+from src.io_utils import init_PROTOS
+from utils.six_dof_utils import update_state_with_gnc
+
 
 def main():
-    # 1. Parse input
-    config = init_PROTOS.parse_input("data/input_files/J2_regression_test.jsonx")
+    # --- Initialization ---
+    config = init_PROTOS.parse_input("data/input_files/j2_regression_test.jsonx")
+    sim_config = config["simulation"]
     dyn_config = config["dynamics"]
     gnc_config = config["gnc"]
 
-    # Extract simulation parameters
-    sim = dyn_config.get("simulation", {})
-    dt = sim.get("time_step", 1)
-    duration = sim.get("duration", 3600.0)
-    steps = int(duration / dt) + 1
-    t_eval = np.linspace(0, duration, steps)
+    dt = sim_config.get("time_step", 1)
+    t_eval = np.array(config.get("t_eval"))
+    initial_epoch = sim_config.get("epoch")
+    is_6dof = sim_config.get("simulation_mode", "3DOF").upper() == "6DOF"
 
-    # 2. Initialize state
-    state = {
-        "chief_r": np.array(dyn_config["chief_r"]),
-        "chief_v": np.array(dyn_config["chief_v"]),
-        "deputy_r": np.array(dyn_config["deputy_r"]),
-        "deputy_v": np.array(dyn_config["deputy_v"]),
-        "deputy_rho": np.array(dyn_config["deputy_rho"]),
-        "deputy_rho_dot": np.array(dyn_config["deputy_rho_dot"]),
-    }
+    state = config.get("init_state", {})
+    trajectory = [state.copy()]
+    gnc_results = []
 
-    # 3. Propagate dynamics
-    for _ in t_eval:
-        next_state = dynamics.dyn_step(state, dt, dyn_config)
-        gnc_out = gnc.gnc_step(next_state, gnc_config)
+    # --- Propagation Loop ---
+    for _ in t_eval[:-1]:
+        # GNC Step
+        gnc_out = gnc.gnc_step(state, gnc_config)
+        gnc_results.append(gnc_out)
+
+        # Update State with GNC Outputs
+        update_state_with_gnc(state, gnc_out, is_6dof)
+
+        # Dynamics Step
+        next_state = dynamics.dyn_step(dt, state, dyn_config)
+
+        # Update Time & Epoch
+        next_state["sim_time"] = np.array(state.get("sim_time", 0.0) + dt, dtype=np.float64)
+        next_state["epoch"] = state.get("epoch", initial_epoch) + timedelta(seconds=dt) # type: ignore
+
+        # Store & Advance
+        trajectory.append(next_state)
         state = next_state
 
-    # 4. Extract final propagated state
-    chief_final = np.hstack([state["chief_v"], state["chief_r"]])
-    deputy_final = np.hstack([state["deputy_v"], state["deputy_r"]])
-    propagated_state = np.hstack([chief_final, deputy_final])
+    # --- Extract final propagated state ---
+    propagated_state = np.array([
+        state["chief_v"][0], state["chief_v"][1], state["chief_v"][2],
+        state["chief_r"][0], state["chief_r"][1], state["chief_r"][2],
+        state["deputy_v"][0], state["deputy_v"][1], state["deputy_v"][2],
+        state["deputy_r"][0], state["deputy_r"][1], state["deputy_r"][2]
+    ])
 
     # -------------------------------------------------------------------
     # 5. GMAT reference state (EarthICRF, includes J2)
@@ -116,8 +129,8 @@ def main():
     print(f"Deputy position error (km): {deputy_position_error_km:.6e}")
     print(f"Deputy velocity error (km/s): {deputy_velocity_error_km_s:.6e}")
 
-    tolerance_pos = 1e-1   # km
-    tolerance_vel = 1e-4   # km/s
+    tolerance_pos = 1e-3   # km ( 1 m)
+    tolerance_vel = 1e-6   # km/s (1 mm/s)
 
     passed = (
         position_error_km < tolerance_pos

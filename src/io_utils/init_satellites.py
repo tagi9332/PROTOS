@@ -1,5 +1,5 @@
 import numpy as np
-from utils.orbital_element_conversions.oe_conversions import orbital_elements_to_inertial, lroes_to_inertial, inertial_to_oes
+from utils.orbital_element_conversions.oe_conversions import oes_to_inertial, lroes_to_inertial, inertial_to_oes
 from utils.frame_conversions.rel_to_inertial_functions import (
     inertial_to_rel_LVLH, rel_vector_to_inertial,
     LVLH_DCM, compute_omega
@@ -18,7 +18,7 @@ def _init_chief_state(chief: dict):
 
     elif frame == "OES":
         # Chief given in orbital elements vector [a, e, i, raan, argp, ta]
-        chief_r, chief_v = orbital_elements_to_inertial(*chief_vector, mu=398600.4418, units='deg')
+        chief_r, chief_v = oes_to_inertial(*chief_vector, mu=398600.4418, units='deg')
 
     else:
         raise ValueError("Chief initial state must be either ECI or ORBITAL_ELEMENTS")
@@ -89,7 +89,7 @@ def _init_deputy_state(deputy: dict, chief_r: np.ndarray, chief_v: np.ndarray, c
         oe_dep = oe_chief + deputy_state
 
         # Convert deputy OEs to inertial
-        deputy_r, deputy_v = orbital_elements_to_inertial(*oe_dep, units='deg')
+        deputy_r, deputy_v = oes_to_inertial(*oe_dep, units='deg')
 
         # Convert to LVLH relative position and velocity
         deputy_rho, deputy_rho_dot = inertial_to_rel_LVLH(deputy_r, deputy_v, chief_r, chief_v)
@@ -123,6 +123,11 @@ def init_satellites(raw_config: dict, sim_config: dict) -> dict:
         
         # Initialize deputy attitude
         q_BN_d, omega_BN_d = _init_attitude(deputy)
+    else:
+        q_BN_c = np.array([1, 0, 0, 0])  # Identity quaternion
+        omega_BN_c = np.array([0, 0, 0])    # Zero angular velocity
+        q_BN_d = np.array([1, 0, 0, 0])  # Identity quaternion
+        omega_BN_d = np.array([0, 0, 0])    # Zero angular velocity
 
     
     # Dynamics input: inertial positions/velocities + simulation config

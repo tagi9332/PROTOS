@@ -1,5 +1,4 @@
 import numpy as np
-import warnings
 from utils.frame_conversions.rel_to_inertial_functions import rel_vector_to_inertial
 from data.resources.constants import MU_EARTH
 
@@ -8,8 +7,6 @@ def inertial_to_oes(R, V, mu=MU_EARTH, units='rad'):
     Convert inertial state vectors (R, V) to classical orbital elements.
     Returns: a, e, i, RAAN, ARGP, TA
     """
-
-    warnings.filterwarnings("error", category=RuntimeWarning)
 
     R = np.array(R, dtype=float)
     V = np.array(V, dtype=float)
@@ -114,7 +111,7 @@ def inertial_to_oes(R, V, mu=MU_EARTH, units='rad'):
         return a, ecc, i, raan, argp, ta
 
 
-def orbital_elements_to_inertial(a, e, i, raan, argp, ta, mu=MU_EARTH, units='rad'):
+def oes_to_inertial(a, e, i, raan, argp, ta, mu=MU_EARTH, units='rad'):
     """
     Classical Orbital Elements -> inertial position/velocity.
 
@@ -165,7 +162,7 @@ def orbital_elements_to_inertial(a, e, i, raan, argp, ta, mu=MU_EARTH, units='ra
     return r, v
 
 # compute mean motion from inertial state vectors
-def compute_mean_motion_from_ECI(r, v, mu=398600.4418):
+def compute_mean_motion_from_ECI(r, v, mu=MU_EARTH):
     """
     Compute the mean motion from inertial state vectors (r, v).
     r: position vector (km)

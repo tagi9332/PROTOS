@@ -40,7 +40,7 @@ def compute_perturb_accel(r: np.ndarray, v: np.ndarray, perturb_config: dict,
         a_pert[1] -= factor * (1 - 5 * z2 / r_mag**2) * r[1]
         a_pert[2] -= factor * (3 - 5 * z2 / r_mag**2) * r[2]
 
-    # --- Drag perturbation ---
+    # --- Drag perturbation --- ** Not working properly ** 
     if perturb_config.get("drag", False):
         # Altitude
         r_mag = np.linalg.norm(r)  # km
@@ -65,7 +65,7 @@ def compute_perturb_accel(r: np.ndarray, v: np.ndarray, perturb_config: dict,
 
             a_pert += a_drag
 
-    # --- Solar Radiation Pressure ---
+    # --- Solar Radiation Pressure --- ** Not working properly **
     if perturb_config.get("SRP", False):
         # Solar constant at 1 AU in W/km^2
         S_sun = 1.3670

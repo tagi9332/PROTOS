@@ -17,25 +17,27 @@ Key Features
 - Multiple propagators:
   * CWH (Clohessy-Wiltshire-Hill equations)
   * 2BODY (full two-body orbital propagation)
-  * LINEARIZED_2BODY (linearized relative two-body dynamics)
   * TH (Tschauner-Hempel equations)
 - Selectable GNC controllers:
   * Cartesian Continuous Feedback
   * Orbit Element Difference Continuous Feedback
+  * CWH Linearized Continuous Feedback **
 - Support for multiple reference frames:
   * ECI (Earth-Centered Inertial)
   * LVLH (Local Vertical-Local Horizon)
   * OEs (Classical Orbital Elements) 
 - Perturbations (toggleable):
   * J2
-  * Drag
-  * Solar radiation pressure
+  * Drag **
+  * Solar radiation pressure **
 - Postprocessing:
   * Export trajectory and GNC results to CSV
   * Generate trajectory plots in multiple frames
     and ECI frames
   * Generate control and delta-V plots
   * Generate orbit element plots 
+
+  ** Currently not behaving correctly
 
 Repository Structure
 --------------------

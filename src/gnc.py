@@ -2,10 +2,12 @@
 Guidance, Navigation, and Control (GNC) Module
 """
 import numpy as np
-from src.controllers.cwh_controller import cwh_step
-from src.controllers.cartesian_controller import cartesian_step
-from src.controllers.mean_oe_controller import mean_oe_step
-from src.controllers.attitude_control.attitude_controller import attitude_step
+from src.controllers import (
+    cwh_step,
+    cartesian_step,
+    mean_oe_step,
+    attitude_step
+)
 
 # Map config strings to functions
 TRANSLATIONAL_CONTROLLERS = {

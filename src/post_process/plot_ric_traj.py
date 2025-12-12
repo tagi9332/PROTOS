@@ -2,7 +2,6 @@ import os
 import numpy as np
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D  # Required for 3D plotting
 
 def save_plane_views(results_serializable, output_dir):
     """

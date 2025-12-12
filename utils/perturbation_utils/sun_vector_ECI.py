@@ -1,6 +1,6 @@
+from astropy.coordinates import GCRS, get_sun
 from astropy.time import Time
-from astropy.coordinates import get_sun, GCRS
-import astropy.units as u
+from astropy import units as u
 import numpy as np
 
 def get_sun_vector_eci(epoch):
@@ -27,17 +27,12 @@ def get_sun_vector_eci(epoch):
     sun_gcrs = sun_icrs.transform_to(GCRS(obstime=t))
 
     # Extract cartesian coordinates in meters, convert to km
-    r_sun_eci = sun_gcrs.cartesian.xyz.to(u.km).value # type: ignore
+    r_sun_eci = sun_gcrs.cartesian.xyz.to_value(u.Unit("km")) # type: ignore
+
+    # Convert to unit vector
+    norm = np.linalg.norm(r_sun_eci)
+    if norm == 0:
+        raise ValueError("Sun vector norm is zero; check input epoch.")
+    r_sun_eci = r_sun_eci / norm
 
     return np.array(r_sun_eci)
-
-# # ---------------- Example usage ----------------
-# if __name__ == "__main__":
-#     from datetime import datetime
-
-#     epoch = datetime.utcnow()
-#     print("Current UTC time:", epoch)
-#     r_sun = get_sun_vector_eci(epoch)
-
-#     print("Sun position in ECI [km]:", r_sun)
-#     print("Sun distance [AU]:", np.linalg.norm(r_sun)/149597870.7)  # approx AU

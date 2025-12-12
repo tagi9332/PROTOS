@@ -17,8 +17,6 @@ def step_cwh(state: dict, dt: float, config: dict):
     sim = config.get("simulation", {})
     perturb_config = sim.get("perturbations", {})
     epoch = state["epoch"] 
-    if epoch is None:
-        raise ValueError("Simulation 'epoch' is required for SRP perturbation modeling.")
     
     sat_props = config.get("satellite_properties", {})
     chief_props = sat_props.get("chief", {})

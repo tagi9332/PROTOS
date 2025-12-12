@@ -42,7 +42,7 @@ def plot_attitude(results_serializable, output_dir):
     wC_list, wD_list = [], []
 
     for fs in full_state:
-        qC, wC, qD, wD = _extract_quat_and_rates(fs, True)
+        qC, wC, qD, wD = _extract_quat_and_rates(fs, True) # type: ignore
         qC_list.append(qC)
         qD_list.append(qD)
         wC_list.append(wC)
