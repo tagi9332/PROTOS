@@ -4,10 +4,10 @@
     "simulation": {
     "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC
     "duration": 2000,                  // seconds
-    "time_step": 0.01,                   // seconds
+    "time_step": 1,                   // seconds
     "propagator": "2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
     "perturbations": {
-      "J2": false,
+      "J2": true,
       "drag": false,
       "solar_pressure": false
     }
@@ -18,7 +18,7 @@
       "name": "Chief",
       "initial_state": {
         "state": [-6685.20926, 601.51244, 3346.06634, -1.74294, -6.70242, -2.27739], // km, km/s in ECI frame, degrees for OEs
-        "frame": "ECI"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA]) 
+        "frame": "ECI"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])
       },
       "mass": 500.0,
       "properties": {

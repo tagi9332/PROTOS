@@ -1,8 +1,10 @@
 import numpy as np
+from scipy.integrate import solve_ivp
+
 from src.propagators.perturbation_accel import compute_perturb_accel
 from utils.frame_conversions.rel_to_inertial_functions import rel_vector_to_inertial, LVLH_DCM
 from utils.orbital_element_conversions.oe_conversions import inertial_to_oes, m_to_ta, ta_to_m
-from data.resources.constants import MU_EARTH
+from data.resources.constants import MU_EARTH,J2000_EPOCH
 
 def _th_derivs(nu, y, e, p, h, u_total_t):
     """
@@ -36,7 +38,7 @@ def step_th(state: dict, dt: float, config: dict):
     chief_v = state["chief_v"]
     rho = state["deputy_rho"]
     rho_dot = state["deputy_rho_dot"]
-    epoch = state.get("epoch")
+    epoch = state.get("epoch", J2000_EPOCH)
     u_ctrl_t = state.get("control_accel", np.zeros(3))
 
     sim_config = config.get("simulation", {}).get("perturbations", {})
@@ -58,11 +60,8 @@ def step_th(state: dict, dt: float, config: dict):
         # Reconstruct deputy inertial state for perturbation calc
         deputy_r, deputy_v = rel_vector_to_inertial(rho, rho_dot, chief_r, chief_v)
         
-        if epoch:
-            a_pert_chief = compute_perturb_accel(chief_r, chief_v, sim_config, c_drag, c_mass, epoch)
-            a_pert_deputy = compute_perturb_accel(deputy_r, deputy_v, sim_config, d_drag, d_mass, epoch)
-        else:
-            a_pert_chief = a_pert_deputy = np.zeros(3)
+        a_pert_chief = compute_perturb_accel(chief_r, chief_v, sim_config, c_drag, c_mass, epoch)
+        a_pert_deputy = compute_perturb_accel(deputy_r, deputy_v, sim_config, d_drag, d_mass, epoch)
 
         # Calculate differential force in LVLH
         a_diff_eci = a_pert_deputy - a_pert_chief
@@ -88,7 +87,6 @@ def step_th(state: dict, dt: float, config: dict):
     # Handle wrapping for integration span
     if nu_final < nu_0:
         nu_final += 2 * np.pi
-    d_nu_total = nu_final - nu_0
 
     # Integration (Anomaly Domain)
     r_mag = np.linalg.norm(chief_r)
@@ -98,24 +96,23 @@ def step_th(state: dict, dt: float, config: dict):
     rho_prime_0 = rho_dot / nu_dot_0
     y_curr = np.hstack((rho, rho_prime_0))
 
-    # Dynamic stepping
-    steps = max(1, int(d_nu_total / 0.1))
-    h_step = d_nu_total / steps
-    curr_nu = nu_0
+    nu_span = (nu_0, nu_final)
 
-    # RK4 Loop
-    for _ in range(steps):
-        k1 = h_step * _th_derivs(curr_nu, y_curr, e, p, h_val, u_total_t)
-        k2 = h_step * _th_derivs(curr_nu + 0.5*h_step, y_curr + 0.5*k1, e, p, h_val, u_total_t)
-        k3 = h_step * _th_derivs(curr_nu + 0.5*h_step, y_curr + 0.5*k2, e, p, h_val, u_total_t)
-        k4 = h_step * _th_derivs(curr_nu + h_step, y_curr + k3, e, p, h_val, u_total_t)
-        
-        y_curr += (k1 + 2*k2 + 2*k3 + k4) / 6.0
-        curr_nu += h_step
+    # We use args=() to pass the extra parameters into _th_derivs
+    sol = solve_ivp(
+        _th_derivs, 
+        nu_span, 
+        y_curr, 
+        method='RK45', 
+        args=(e, p, h_val, u_total_t),
+        rtol=1e-12, 
+        atol=1e-12
+    )
+    y_final = sol.y[:, -1]
 
     # Reconstruction (Anomaly -> Time)
-    rho_final = y_curr[:3]
-    rho_prime_final = y_curr[3:]
+    rho_final = y_final[:3]
+    rho_prime_final = y_final[3:]
     
     r_final_mag = p / (1 + e * np.cos(nu_final))
     nu_dot_final = h_val / r_final_mag**2

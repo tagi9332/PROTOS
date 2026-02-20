@@ -1,5 +1,5 @@
 {
-  "scenario": "Configuration for Project 1 Task 1",
+  "scenario": "CWN Passive NMC",
   
     "simulation": {
     "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC

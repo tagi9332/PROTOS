@@ -1,5 +1,5 @@
 import numpy as np
-from utils.numerical_methods.rk54 import rk54
+from scipy.integrate import solve_ivp
 
 def q_step(dt: float, state: dict, config: dict):
     # 1. Safety Check: Timestep vs Inertia
@@ -45,15 +45,15 @@ def q_step(dt: float, state: dict, config: dict):
     # -----------------------------
     # Integrate
     # -----------------------------
-    chief_y_next = rk54(
-        lambda y: dynamics_func(y, J_chief, J_inv_chief, torque_cmd_chief), 
-        chief_y, dt
-    )
+    chief_y_next = solve_ivp(
+        lambda t, y: dynamics_func(y, J_chief, J_inv_chief, torque_cmd_chief), 
+        t_span=(0, dt), y0=chief_y, method='RK45', rtol=1e-12, atol=1e-12
+    ).y[:, -1]
     
-    deputy_y_next = rk54(
-        lambda y: dynamics_func(y, J_deputy, J_inv_deputy, torque_cmd_deputy), 
-        deputy_y, dt
-    )
+    deputy_y_next = solve_ivp(
+        lambda t, y: dynamics_func(y, J_deputy, J_inv_deputy, torque_cmd_deputy), 
+        t_span=(0, dt), y0=deputy_y, method='RK45', rtol=1e-12, atol=1e-12
+    ).y[:, -1]
 
     # -----------------------------
     # Normalize & Return

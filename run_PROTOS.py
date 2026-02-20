@@ -11,7 +11,7 @@ from utils.six_dof_utils import update_state_with_gnc
 
 def main():
     # --- Initialization ---
-    config = init_PROTOS.parse_input("data/input_files/project_task_3.jsonx")
+    config = init_PROTOS.parse_input("data/input_files/th_nmc_j2_example_config.jsonx") # Input file path of JSON configuration file to run
     sim_config = config["simulation"]
     dyn_config = config["dynamics"]
     gnc_config = config["gnc"]
@@ -39,7 +39,7 @@ def main():
 
         # Update Time & Epoch
         next_state["sim_time"] = np.array(state.get("sim_time", 0.0) + dt, dtype=np.float64)
-        next_state["epoch"] = state.get("epoch", initial_epoch) + timedelta(seconds=dt) # type: ignore
+        next_state["epoch"] = state.get("epoch", initial_epoch) + timedelta(seconds=dt)
 
         # Store & Advance
         trajectory.append(next_state)

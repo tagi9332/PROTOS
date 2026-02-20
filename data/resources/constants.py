@@ -1,5 +1,9 @@
+from datetime import datetime
+
+# ---------------------------------------------------------------------------
 # PROTOS/data/resources/constants.py
 # Vallado 2013, Fundamentals of Astrodynamics and Applications, 4th Edition
+# ----------------------------------------------------------------------------
 
 # Gravitational parameters [km^3/s^2]
 MU_EARTH = 398600.4418
@@ -15,3 +19,6 @@ J2 = 1.08262668e-3
 
 # Solar radiation pressure at 1 AU [N/m^2]
 P_SRP = 4.56e-6
+
+# J2000 epoch in datetime format
+J2000_EPOCH = datetime(2000, 1, 1, 12, 0, 0)

@@ -49,7 +49,7 @@ from utils.six_dof_utils import update_state_with_gnc
 
 def main():
     # --- Initialization ---
-    config = init_PROTOS.parse_input("data/input_files/j2_regression_test.jsonx")
+    config = init_PROTOS.parse_input("data/regression_tests/j2_regression_test.jsonx")
     sim_config = config["simulation"]
     dyn_config = config["dynamics"]
     gnc_config = config["gnc"]

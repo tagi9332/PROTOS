@@ -1,5 +1,5 @@
 {
-  "scenario": "Configuration for Quiz 3",
+  "scenario": "Cartesian Control Example 1",
   
     "simulation": {
     "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC

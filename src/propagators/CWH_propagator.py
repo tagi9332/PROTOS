@@ -1,5 +1,6 @@
 import numpy as np
-from utils.numerical_methods.rk4 import rk54
+from scipy.integrate import solve_ivp
+
 from src.propagators.perturbation_accel import compute_perturb_accel
 from utils.frame_conversions.rel_to_inertial_functions import LVLH_DCM, compute_omega
 from data.resources.constants import MU_EARTH
@@ -89,10 +90,11 @@ def step_cwh(state: dict, dt: float, config: dict):
 
 
     # -------------------------------
-    # RK4 Integration
+    # Variable Step Integration
     # -------------------------------
     full_state = np.hstack((chief_r, chief_v, deputy_rho, deputy_rho_dot))
-    next_full_state = rk54(combined_dynamics, full_state, dt)
+    sol = solve_ivp(combined_dynamics, (0, dt), full_state, method='RK45', rtol=1e-12, atol=1e-12)
+    next_full_state = sol.y[:, -1]
 
     # -------------------------------
     # Unpack and Return

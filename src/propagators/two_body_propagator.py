@@ -1,8 +1,10 @@
 import numpy as np
+from scipy.integrate import solve_ivp
+
 from src.propagators.perturbation_accel import compute_perturb_accel
 from utils.frame_conversions.rel_to_inertial_functions import LVLH_DCM, compute_omega
-from utils.numerical_methods.rk4 import rk54
-from data.resources.constants import MU_EARTH
+from data.resources.constants import MU_EARTH, J2000_EPOCH
+
 
 def step_2body(state: dict, dt: float, config: dict):
 
@@ -25,12 +27,12 @@ def step_2body(state: dict, dt: float, config: dict):
     chief_drag = {"Cd": chief_props.get("Cd", 2.2), "area": chief_props.get("area", 1.0)}
     deputy_drag = {"Cd": deputy_props.get("Cd", 2.2), "area": deputy_props.get("area", 1.0)}
 
-    epoch = state.get("epoch", None)
+    epoch = state.get("epoch", J2000_EPOCH)
 
     # -------------------------------
     # Dynamics functions for RK4
     # -------------------------------
-    def chief_dynamics(y):
+    def chief_dynamics(t,y):
         r = y[:3]
         v = y[3:]
         r_mag = np.linalg.norm(r)
@@ -40,7 +42,7 @@ def step_2body(state: dict, dt: float, config: dict):
 
         return np.hstack((v, a))
 
-    def deputy_dynamics(y):
+    def deputy_dynamics(t,y):
         r = y[:3]
         v = y[3:]
         r_mag = np.linalg.norm(r)
@@ -52,13 +54,31 @@ def step_2body(state: dict, dt: float, config: dict):
         return np.hstack((v, a))
 
     # -------------------------------
-    # RK4 Integration
+    # Variable Step Integration
     # -------------------------------
     chief_state = np.hstack((chief_r, chief_v))
     deputy_state = np.hstack((deputy_r, deputy_v))
 
-    chief_next = rk54(chief_dynamics, chief_state, dt)
-    deputy_next = rk54(deputy_dynamics, deputy_state, dt)
+    chief_sol = solve_ivp(
+        chief_dynamics,
+        (0, dt),
+        chief_state,
+        method='RK45',
+        rtol=1e-12,
+        atol=1e-12
+    )
+
+    deputy_sol = solve_ivp(
+        deputy_dynamics,
+        (0, dt),
+        deputy_state,
+        method='RK45',
+        rtol=1e-12,
+        atol=1e-12
+    )
+
+    chief_next = chief_sol.y[:, -1]
+    deputy_next = deputy_sol.y[:, -1]
 
     chief_r_next = chief_next[:3]
     chief_v_next = chief_next[3:]
