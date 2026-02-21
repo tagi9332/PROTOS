@@ -86,23 +86,19 @@ def cwh_step(state: dict, config: dict, sat_name: str) -> dict:
     C_H_N = LVLH_DCM(r_chief, v_chief)
 
     # Compute A1 and A2 matrices
-    n = np.sqrt(MU_EARTH / np.linalg.norm(r_chief)**3)  # mean motion
+    n = np.sqrt(MU_EARTH / np.linalg.norm(r_chief)**3)
     A1 = _compute_A1(n)
     A2 = _compute_A2(n)
 
     # Compute v_star
-    v_star = C_H_N @ (A2 @ rho_deputy + A1 @ rho_dot_deputy)
+    v_star_lvlh = C_H_N @ (A2 @ rho_deputy + A1 @ rho_dot_deputy)
 
     # PD control
-    u = v_star- A1 @ rho_deputy - A2 @ rho_dot_deputy - Kp * delta_r - Kd * delta_r_dot
+    u_lvlh = v_star_lvlh - (A1 @ rho_deputy) - (A2 @ rho_dot_deputy) - (Kp * delta_r) - (Kd * delta_r_dot)
+
+    # Convert control from LVLH to inertial frame
+    u_inertial = C_H_N.T @ u_lvlh
 
     return {
-        "status": "lvlh",
-        "chief_r": r_chief.tolist(),
-        "chief_v": v_chief.tolist(),
-        "deputy_r": deputy_state.get("r", np.zeros(3)).tolist(),
-        "deputy_v": deputy_state.get("v", np.zeros(3)).tolist(),
-        "deputy_rho": rho_deputy.tolist(),
-        "deputy_rho_dot": rho_dot_deputy.tolist(),
-        "accel_cmd": u.tolist()
+        "accel_cmd": u_inertial.tolist()
     }

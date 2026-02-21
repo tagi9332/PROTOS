@@ -59,8 +59,8 @@ def target_pointing_controller(state: dict, config: dict, sat_name: str) -> dict
     deputy_v = np.array(deputy_state["v"])
     deputy_rho = np.array(deputy_state["rho"])
 
-    q_BN = np.array(deputy_state["attitude"]["q_BN"])
-    omega_BN = np.array(deputy_state["attitude"]["omega_BN"])
+    q_BN = np.array(deputy_state["q_BN"])
+    omega_BN = np.array(deputy_state["omega_BN"])
 
     # Determine Inertial Target Vector
     if target_type == "CHIEF":
@@ -95,13 +95,9 @@ def target_pointing_controller(state: dict, config: dict, sat_name: str) -> dict
 
     # Compute Torque (PD Controller)
     torque_cmd_deputy = -Kp * att_err_vec - Kd * omega_err
-    
-    # Not implemented for chief in this controller
-    torque_cmd_chief = np.zeros(3) 
 
     return {
-        "torque_chief": torque_cmd_chief,
-        "torque_deputy": torque_cmd_deputy,
-        "att_error_deputy": att_err_vec,   
-        "rate_error_deputy": omega_err  
-    }
+            "torque_cmd": torque_cmd_deputy, 
+            "att_error": att_err_vec,   
+            "rate_error": omega_err  
+        }

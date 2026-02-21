@@ -25,7 +25,11 @@ def init_PROTOS(file_path: str) -> dict:
     dyn_config = init_satellites(raw_config, sim_config) 
     init_state = dyn_config["init_state"]
     parsed_satellites = dyn_config["parsed_satellites"]
-    
+
+    # Attitude dynamics step check
+    if sim_config.simulation_mode.upper() == "6DOF" and sim_config.time_step > 0.1:
+        print(f"WARNING: Simulation is in 6DOF mode with a timestep of {sim_config.time_step}s. Large steps with ZOH torque can cause instability. Consider reducing the timestep for better accuracy.")    
+
     # -----------------------
     # GNC Initialization
     # -----------------------

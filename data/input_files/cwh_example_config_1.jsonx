@@ -36,32 +36,30 @@
       "properties": {
         "area": 10.0,   // cross-sectional area in m^2
         "Cd": 2.0   // drag coefficient
-      }
+      },
+      "gnc": {
+        "guidance": {
+          "type": "RPO",                   // options: NONE, RPO
+          "rpo": {
+            "desired_relative_state": [2.0,0.5,0,0,0,10], // km, km/s in ECI frame, degrees for OEs, radians and km for LROEs
+            "frame": "LROEs"                 // options: LVLH, dOEs ([d_a,d_e,d_i,d_RAAN,d_ARGP,d_TA]), LROES ([A0,B0,alpha,beta,x0,y0])
+          }
+        },
+        "navigation": {
+          "type": "EKF"                    // options: NONE, EKF ** PLACEHOLDER, does nothing **
+        },
+        "control": {
+          "control_method": "CWH",        // options: cartesian, mean_OEs, CWH
+          "gains": {
+            "K1": 0.00001,                   // proportional gain for cartesian, first diagonal element for mean_OEs
+            "K2": 0.004,                     // derivative gain for cartesian, second diagonal element for mean_OEs
+            "K3": 0.0                   // integral gain for cartesian (not currently used), third diagonal element for mean_OEs
+          },
+          "max_thrust": 5                   // maximum thrust in Newtons
+        }
+     }    
     }
   ],
-
-  "gnc": {
-    "guidance": {
-      "type": "RPO",                   // options: NONE, RPO
-      "rpo": {
-        "deputy_desired_relative_state": [2.0,0.5,0,0,0,10], // km, km/s in ECI frame, degrees for OEs, radians and km for LROEs
-        "frame": "LROEs"                 // options: LVLH, dOEs ([d_a,d_e,d_i,d_RAAN,d_ARGP,d_TA]), LROES ([A0,B0,alpha,beta,x0,y0])
-      }
-    },
-    "navigation": {
-      "type": "EKF"                    // options: NONE, EKF ** PLACEHOLDER, does nothing **
-    },
-    "control": {
-      "control_method": "CWH",        // options: cartesian, mean_OEs, CWH
-      "gains": {
-        "K1": 0.00001,                   // proportional gain for cartesian, first diagonal element for mean_OEs
-        "K2": 0.004,                     // derivative gain for cartesian, second diagonal element for mean_OEs
-        "K3": 0.0                   // integral gain for cartesian (not currently used), third diagonal element for mean_OEs
-      },
-      "max_thrust": 5                   // maximum thrust in Newtons
-      }
-    },
-
   "output": {
     "save_trajectory": true,
     "save_gnc_results": true,

@@ -83,14 +83,14 @@ def mean_oe_step(state: dict, config: dict, sat_name: str) -> dict:
 
     # Extract guidance configuration and desired state
     guidance_rpo = config.get("guidance", {}).get("rpo", {})
-    desired_state_dict = guidance_rpo.get("desired_relative_state", {})
+    desired_state = guidance_rpo.get("desired_relative_state", {})
 
     # If desired state is given in LVLH, return error message
-    if desired_state_dict.get("frame", "").upper() != "DOES":
+    if guidance_rpo.get("frame", "").upper() != "DOES":
         raise ValueError("Desired state for mean_OEs control must be given in differential orbital elements (dOEs).")
     
     # Extract deputy control state vector
-    del_oe_des = np.array(desired_state_dict["state"])
+    del_oe_des = np.array(desired_state)
     del_oe_des[3:] = np.radians(del_oe_des[3:])
 
     # Compute desired orbit elements

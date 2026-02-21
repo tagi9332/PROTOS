@@ -160,7 +160,8 @@ def init_satellites(raw_config: dict, sim_config: Any) -> dict:
                          "v": chief_v,
                          "mass": chief.properties.get("mass", 500.0),
                          "Cd": chief.properties.get("Cd", 2.2),
-                         "area": chief.properties.get("area", 1.0)
+                         "area": chief.properties.get("area", 1.0),
+                         "inertia_matrix": chief.properties.get("inertia_matrix", np.diag([20, 20, 20]))
                         }
     
     if sim_config.simulation_mode == "6DOF":
@@ -181,7 +182,8 @@ def init_satellites(raw_config: dict, sim_config: Any) -> dict:
             "rho_dot": rho_dot,
             "mass": dep.properties.get("mass", 500.0),
             "Cd": dep.properties.get("Cd", 2.2),
-            "area": dep.properties.get("area", 1.0)
+            "area": dep.properties.get("area", 1.0),
+            "inertia_matrix": dep.properties.get("inertia_matrix", np.diag([20, 20, 20]))
         }
         
         if sim_config.simulation_mode == "6DOF":

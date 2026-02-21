@@ -48,7 +48,7 @@
     "guidance": {
       "type": "RPO",                   // options: NONE, RPO
       "rpo": {
-        "deputy_desired_relative_state": [0,-0.05,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
+        "desired_relative_state": [0,-0.05,0,0,0,0], // km, km/s in ECI frame, degrees for OEs
         "frame": "LVLH"                 // options: LVLH, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
       }
     },

@@ -16,7 +16,7 @@ def step_cwh(sat_state: dict, dt: float, config: dict, **kwargs):
     # Safely grab epoch for sun vectors (SRP)
     epoch = sat_state.get("epoch", chief_state.get("epoch", 0.0)) 
     sim_config = config.get("simulation", {})
-    perturb_config = sim_config.get("perturbations", {})
+    perturb_config = getattr(sim_config, "perturbations", {})
 
     # ==========================================
     # 1. CHIEF PROPAGATION (ECI 2-Body + Perturbations)
@@ -53,12 +53,11 @@ def step_cwh(sat_state: dict, dt: float, config: dict, **kwargs):
     # Deputy properties
     rho = np.array(sat_state["rho"])
     rho_dot = np.array(sat_state["rho_dot"])
-    u_ctrl = np.array(sat_state.get("accel_cmd", [0.0, 0.0, 0.0]))
+    u_ctrl = np.array(sat_state.get("accel_cmd", [0.0, 0.0, 0.0])) # Assuming ECI command
     d_mass = sat_state.get("mass", 500.0)
     d_drag = {"Cd": sat_state.get("Cd", 2.2), "area": sat_state.get("area", 1.0)}
 
     def combined_dynamics(t, y):
-        # Note: solve_ivp requires the function signature to be (t, y)
         curr_c_r = y[0:3]
         curr_c_v = y[3:6]
         curr_rho = y[6:9]
@@ -80,25 +79,30 @@ def step_cwh(sat_state: dict, dt: float, config: dict, **kwargs):
         az_cwh = -n**2*z
         a_cwh_natural = np.array([ax_cwh, ay_cwh, az_cwh])
 
-        # C. Perturbation Handling (Differential)
-        C_HN = LVLH_DCM(curr_c_r, curr_c_v) 
-        dep_r_eci = curr_c_r + C_HN.T @ curr_rho
+        # C. Perturbation Handling
+        C_HN = LVLH_DCM(curr_c_r, curr_c_v)
+
+        # FIX: Rotate rho to ECI before cross products
+        rho_eci = C_HN.T @ curr_rho
+        dep_r_eci = curr_c_r + rho_eci
         
         omega_eci = compute_omega(curr_c_r, curr_c_v) 
-        dep_v_eci = curr_c_v + C_HN.T @ (np.cross(omega_eci, curr_rho) + curr_rho_dot)
+        # Cross ECI with ECI, then add the rotated relative velocity
+        dep_v_eci = curr_c_v + np.cross(omega_eci, rho_eci) + (C_HN.T @ curr_rho_dot)
 
         a_pert_deputy_eci = compute_perturb_accel(dep_r_eci, dep_v_eci, perturb_config, d_drag, d_mass, epoch)
         a_diff_eci = a_pert_deputy_eci - a_pert_chief_eci
         a_diff_lvlh = C_HN @ a_diff_eci
 
         # D. Total Relative Acceleration
-        a_rel_total_lvlh = a_cwh_natural + a_diff_lvlh + u_ctrl
+        u_ctrl_lvlh = C_HN @ u_ctrl 
+        a_rel_total_lvlh = a_cwh_natural + a_diff_lvlh + u_ctrl_lvlh
 
-        return np.hstack((curr_c_v, a_chief_total_eci, curr_rho_dot, a_rel_total_lvlh))
+        return np.hstack((curr_c_v, a_chief_total_eci, curr_rho_dot, a_rel_total_lvlh)).flatten()
 
     # Integrate the combined system
     full_state = np.hstack((c_r, c_v, rho, rho_dot))
-    sol = solve_ivp(combined_dynamics, (0, dt), full_state, method='RK45', rtol=1e-12, atol=1e-12)
+    sol = solve_ivp(combined_dynamics, (0, dt), full_state, method='Radau', rtol=1e-12, atol=1e-12)
     next_full_state = sol.y[:, -1]
 
     # Unpack Deputy states
@@ -107,12 +111,15 @@ def step_cwh(sat_state: dict, dt: float, config: dict, **kwargs):
     next_rho = next_full_state[6:9]
     next_rho_dot = next_full_state[9:12]
 
-    # Reconstruct Deputy ECI using the integrated Chief state from the RK45 step
+    # Reconstruct Deputy ECI using the integrated Chief state
     C_HN_next = LVLH_DCM(next_c_r, next_c_v)
-    next_d_r = next_c_r + C_HN_next.T @ next_rho
+    
+    # FIX: Rotate next_rho to ECI before cross product!
+    next_rho_eci = C_HN_next.T @ next_rho
+    next_d_r = next_c_r + next_rho_eci
     
     omega_next = compute_omega(next_c_r, next_c_v)
-    next_d_v = next_c_v + C_HN_next.T @ (np.cross(omega_next, next_rho) + next_rho_dot)
+    next_d_v = next_c_v + np.cross(omega_next, next_rho_eci) + (C_HN_next.T @ next_rho_dot)
 
     return {
         "r": next_d_r.tolist(),

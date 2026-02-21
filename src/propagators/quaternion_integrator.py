@@ -5,10 +5,6 @@ def q_step(dt: float, sat_state: dict, config: dict, **kwargs):
     """
     Propagates the attitude kinematics and dynamics for a single satellite.
     """
-    # 1. Safety Check: Timestep vs Inertia
-    if dt > 0.1: 
-        print(f"WARNING: q_step dt is {dt}s. Large steps with constant torque cause instability in 6DOF mode.")
-
     # 2. Extract State for THIS satellite
     q_BN = np.array(sat_state.get('q_BN', [1.0, 0.0, 0.0, 0.0]))
     omega_BN = np.array(sat_state.get('omega_BN', [0.0, 0.0, 0.0]))

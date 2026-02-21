@@ -116,8 +116,8 @@ def cartesian_step(state: dict, config: dict, sat_name: str) -> dict:
     """
 
     # --- Extract states ---
-    r_c = np.array(state["chief_r"])
-    v_c = np.array(state["chief_v"])
+    r_c = np.array(state["chief"]["r"])
+    v_c = np.array(state["chief"]["v"])
     r_d = np.array(state["deputies"][sat_name]["r"])
     v_d = np.array(state["deputies"][sat_name]["v"])
 
@@ -126,7 +126,7 @@ def cartesian_step(state: dict, config: dict, sat_name: str) -> dict:
     guidance_rpo = config.get("guidance", {}).get("rpo", {})
     rho_des, rho_dot_des = _get_desired_state_LVLH(
         guidance_rpo.get("frame", "LVLH").upper(),
-        guidance_rpo.get("deputy_desired_relative_state"),
+        guidance_rpo.get("desired_relative_state"),
         r_c,
         v_c,
         state.get("sim_time", 0.0)
