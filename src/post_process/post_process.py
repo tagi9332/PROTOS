@@ -16,59 +16,46 @@ from src.post_process import (
     plot_attitude
 )
 
-def _convert_ndarray(obj):
-    if isinstance(obj, dict):
-        return {k: _convert_ndarray(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [_convert_ndarray(v) for v in obj]
-    elif isinstance(obj, np.ndarray):
-        return obj.tolist()
-    return obj
-
 def post_process(results, output_dir):
-
+    """
+    Master post-processing wrapper. 
+    Expects 'results' as a dictionary containing 'time', 'chief', and 'deputies'.
+    """
     os.makedirs(output_dir, exist_ok=True)
-    results_serializable = _convert_ndarray(results)
-    assert (isinstance(results_serializable, dict))
+    
+    # 1. Detect 6DOF dynamically
+    is_6dof = "q" in results.get("chief", {})
+    results["is_6dof"] = is_6dof
 
-    # Detect 6DOF by length of full_state vector
-    init_state = results_serializable["full_state"][0]
-    results_serializable["is_6dof"] = len(init_state) >= 32 # 6DOF has at least 32 elements
+    print(f"Postprocessing results")
 
-    # Save raw state vectors
-    save_state_csv(results_serializable, output_dir)
+    # 2. Extract and Save CSV Data
+    save_state_csv(results, output_dir)
+    save_control_accel(results, output_dir)
+    
+    # save_orbital_elements now dynamically returns the coes_dict we need!
+    coes_dict = save_orbital_elements(results, output_dir)
 
-    # Save classical & differential COEs
-    coes = save_orbital_elements(results_serializable, output_dir)
+    # 3. Generate Trajectory Plots
+    plot_ECI_trajectories(results, output_dir)
+    save_plane_views(results, output_dir)
+    save_iso_view(results, output_dir)
+    plot_relative_separation(results, output_dir)
 
-    # Trajectory plots
-    plot_ECI_trajectories(results_serializable, output_dir)
-
-    # Attitude plots
-    if results_serializable["is_6dof"]:
-        plot_attitude(results_serializable, output_dir)
-        plot_attitude_control(results_serializable, output_dir)
+    # 4. Generate Attitude & Control Plots
+    if is_6dof:
+        plot_attitude(results, output_dir)
+        plot_attitude_control(results, output_dir)
         
-    # Control profiles
-    save_control_accel(results_serializable, output_dir)
-    plot_delta_v(results_serializable, output_dir)
-    plot_control_accel(results_serializable, output_dir) # type: ignore
+    plot_delta_v(results, output_dir)
+    plot_control_accel(results, output_dir)
 
+    # 5. Generate COE Plots
+    if coes_dict:  # Safely checks for non-empty dictionary
+        time = np.array(results.get("time", []), dtype=float)
+        plot_orbital_elements(time, coes_dict, output_dir)
 
-    # COE plots
-    if coes is not None:
-        chief, deputy, delta = coes
-        time = np.array(results_serializable["time"], dtype=float) # type: ignore
-        plot_orbital_elements(time, chief, deputy, delta, output_dir)
+    # 6. Interactive Plot (Usually best kept last so it doesn't block CSV generation)
+    plot_3d_RIC_trajectory(results, output_dir, show_plot=True)
 
-    # Save static plane views of RIC-frame trajectory
-    save_plane_views(results_serializable, output_dir)
-    save_iso_view(results_serializable, output_dir)
-
-    # Plot relative separation
-    plot_relative_separation(results_serializable, output_dir)
-
-    # Open RIC-frame plot in interactive window
-    plot_3d_RIC_trajectory(results_serializable, output_dir, show_plot=True)
-
-    print(f"Postprocess completed. Output saved in {output_dir}")
+    print(f"--- Postprocess completed. Output saved in {output_dir} ---")

@@ -108,7 +108,7 @@ def _get_desired_state_LVLH(frame: str, desired_state: list, r_c, v_c, sim_time)
 
     return rho_des, rho_dot_des
 
-def cartesian_step(state: dict, config: dict) -> dict:
+def cartesian_step(state: dict, config: dict, sat_name: str) -> dict:
     """
     Cartesian GNC step implementing:
        u = -(f(r_d) - f(r_dd)) - K1*Δr - K2*Δr_dot + u_d
@@ -118,13 +118,15 @@ def cartesian_step(state: dict, config: dict) -> dict:
     # --- Extract states ---
     r_c = np.array(state["chief_r"])
     v_c = np.array(state["chief_v"])
-    r_d = np.array(state["deputy_r"])
-    v_d = np.array(state["deputy_v"])
+    r_d = np.array(state["deputies"][sat_name]["r"])
+    v_d = np.array(state["deputies"][sat_name]["v"])
 
     # --- Guidance: desired LVLH relative state ---
+    # Extract guidance congiguration and desired state
+    guidance_rpo = config.get("guidance", {}).get("rpo", {})
     rho_des, rho_dot_des = _get_desired_state_LVLH(
-        config.get("guidance", {}).get("rpo", {}).get("frame", "LVLH").upper(),
-        config.get("guidance", {}).get("rpo", {}).get("deputy_desired_relative_state"),
+        guidance_rpo.get("frame", "LVLH").upper(),
+        guidance_rpo.get("deputy_desired_relative_state"),
         r_c,
         v_c,
         state.get("sim_time", 0.0)

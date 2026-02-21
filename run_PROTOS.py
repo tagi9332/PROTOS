@@ -2,7 +2,7 @@
 Main entry point for PROTOS simulation framework.
 """
 from datetime import timedelta
-import numpy as np
+import copy
 
 from src import dynamics, gnc
 from src.io_utils import init_PROTOS
@@ -11,44 +11,57 @@ from utils.six_dof_utils import update_state_with_gnc
 
 def main():
     # --- Initialization ---
-    config = init_PROTOS.parse_input("data/input_files/th_nmc_j2_example_config.jsonx") # Input file path of JSON configuration file to run
+    input_file_path = "data/input_files/cartesian_example_config_2.jsonx"
+
+    # Load config and extract sim settings
+    config = init_PROTOS.init_PROTOS(input_file_path)
     sim_config = config["simulation"]
-    dyn_config = config["dynamics"]
     gnc_config = config["gnc"]
 
-    dt = sim_config.get("time_step", 1)
-    t_eval = np.array(config.get("t_eval"))
-    initial_epoch = sim_config.get("epoch")
-    is_6dof = sim_config.get("simulation_mode", "3DOF").upper() == "6DOF"
+    dt = sim_config.time_step
+    t_eval = sim_config.t_eval
+    initial_epoch = sim_config.epoch
+    is_6dof = sim_config.simulation_mode.upper() == "6DOF"
 
+    # Initialize states
     state = config.get("init_state", {})
-    trajectory = [state.copy()]
+    
+    state["epoch"] = initial_epoch
+    state["chief"]["epoch"] = initial_epoch
+    for sat in state["deputies"].values():
+        sat["epoch"] = initial_epoch
+
+    trajectory = [copy.deepcopy(state)]
     gnc_results = []
 
     # --- Propagation Loop ---
     for _ in t_eval[:-1]:
         # GNC Step
         gnc_out = gnc.gnc_step(state, gnc_config)
-        gnc_results.append(gnc_out)
+        gnc_results.append(copy.deepcopy(gnc_out))
 
         # Update State with GNC Outputs
         update_state_with_gnc(state, gnc_out, is_6dof)
 
         # Dynamics Step
-        next_state = dynamics.dyn_step(dt, state, dyn_config)
+        next_state = dynamics.dyn_step(dt, state, config)
 
-        # Update Time & Epoch
-        next_state["sim_time"] = np.array(state.get("sim_time", 0.0) + dt, dtype=np.float64)
-        next_state["epoch"] = state.get("epoch", initial_epoch) + timedelta(seconds=dt)
+        # Update Epoch
+        next_epoch = state.get("epoch", initial_epoch) + timedelta(seconds=dt)
+        next_state["epoch"] = next_epoch
+        
+        # Update epochs for chief and deputies
+        next_state["chief"]["epoch"] = next_epoch
+        for sat in next_state["deputies"].values():
+            sat["epoch"] = next_epoch
 
         # Store & Advance
-        trajectory.append(next_state)
+        trajectory.append(copy.deepcopy(next_state))
         state = next_state
 
     # --- Finalize ---
     final_gnc = gnc.gnc_step(state, gnc_config)
-    final_gnc["control_accel"] = final_gnc.get("accel_cmd", np.zeros(3))
-    gnc_results.append(final_gnc)
+    gnc_results.append(copy.deepcopy(final_gnc))
 
     # --- Post Processing ---
     post_dict = package_simulation_results(trajectory, gnc_results, t_eval, is_6dof)

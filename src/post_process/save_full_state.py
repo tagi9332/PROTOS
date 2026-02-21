@@ -1,50 +1,71 @@
 import os
 import csv
+import numpy as np
 
-def save_state_csv(results_serializable, output_dir):
-    os.makedirs(output_dir, exist_ok=True)
-    output_csv = os.path.join(output_dir, "state_results.csv")
-
-    sample_state = results_serializable["full_state"][0]
-    state_length = len(sample_state)
-
-    # Determine if attitude states are included (3DOF = 18 states, 6DOF = 32)
-    has_attitude = (state_length > 18)
-
-    # --------------------------------------
-    # Build CSV header dynamically
-    # --------------------------------------
-    header = [
-        "time",
-        "chief_r_x", "chief_r_y", "chief_r_z",
-        "chief_v_x", "chief_v_y", "chief_v_z",
-        "deputy_r_x", "deputy_r_y", "deputy_r_z",
-        "deputy_v_x", "deputy_v_y", "deputy_v_z",
-        "deputy_rho_x", "deputy_rho_y", "deputy_rho_z",
-        "deputy_rho_dot_x", "deputy_rho_dot_y", "deputy_rho_dot_z",
+def _save_single_state_csv(time, sat_data, sat_name, output_dir):
+    """
+    Dynamically builds and saves a state CSV for a single spacecraft by checking
+    which state keys (ECI, Hill, Attitude) actually exist in its dictionary.
+    """
+    # 1. Define standard mappings: (dictionary_key, [CSV Headers])
+    # By defining units here, you save yourself future headaches!
+    state_map = [
+        ("r", ["r_x_km", "r_y_km", "r_z_km"]),
+        ("v", ["v_x_kms", "v_y_kms", "v_z_kms"]),
+        ("rho", ["rho_x_km", "rho_y_km", "rho_z_km"]),
+        ("rho_dot", ["rho_dot_x_kms", "rho_dot_y_kms", "rho_dot_z_kms"]),
+        ("q", ["q_w", "q_x", "q_y", "q_z"]),
+        ("omega", ["omega_x_rads", "omega_y_rads", "omega_z_rads"])
     ]
 
-    # If 6DOF, append attitude columns
-    if has_attitude:
-        header += [
-            # Chief attitude
-            "chief_q_w", "chief_q_x", "chief_q_y", "chief_q_z",
-            "chief_omega_x", "chief_omega_y", "chief_omega_z",
+    header = ["time_s"]
+    columns = [time]
 
-            # Deputy attitude
-            "deputy_q_w", "deputy_q_x", "deputy_q_y", "deputy_q_z",
-            "deputy_omega_x", "deputy_omega_y", "deputy_omega_z"
-        ]
+    # 2. Dynamically build columns based on available data
+    for key, cols in state_map:
+        val = sat_data.get(key)
+        # Check if the data exists and matches the time history length
+        if val is not None and len(val) == len(time):
+            header.extend(cols)
+            columns.append(np.array(val, dtype=float))
 
-    # --------------------------------------
-    # Write the CSV
-    # --------------------------------------
-    with open(output_csv, "w", newline="") as f:
+    # If only 'time' was added, this spacecraft has no valid data
+    if len(columns) == 1:
+        print(f"[{sat_name}] No valid state data found. Skipping CSV.")
+        return
+
+    # 3. Stack columns horizontally 
+    # np.column_stack flawlessly combines our 1D time array and 2D Nx3/Nx4 state arrays
+    stacked_data = np.column_stack(columns)
+
+    # 4. Save to CSV
+    safe_name = sat_name.replace(" ", "_").lower()
+    out_csv = os.path.join(output_dir, f"state_results_{safe_name}.csv")
+
+    with open(out_csv, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(header)
+        writer.writerows(stacked_data)
 
-        for t, state_vector in zip(results_serializable["time"],
-                                   results_serializable["full_state"]):
-            writer.writerow([t] + state_vector)
 
-    print(f"State vector saved to: {output_csv}")
+def save_state_csv(results_serializable, output_dir):
+    """
+    Saves individual state CSV files for the Chief and all Deputies.
+    Dynamically supports both 3DOF and 6DOF state outputs.
+    """
+    time = np.array(results_serializable.get("time", []), dtype=float)
+    if len(time) == 0:
+        print("No time data available. Skipping state CSV generation.")
+        return
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # 1. Process Chief
+    chief_data = results_serializable.get("chief", {})
+    if chief_data:
+        _save_single_state_csv(time, chief_data, "Chief", output_dir)
+
+    # 2. Process all Deputies
+    deputies = results_serializable.get("deputies", {})
+    for sat_name, sat_data in deputies.items():
+        _save_single_state_csv(time, sat_data, sat_name, output_dir)

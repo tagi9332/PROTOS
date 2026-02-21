@@ -49,25 +49,26 @@ def _compute_A2(n):
 
     return A2
 
-def cwh_step(state: dict, config: dict) -> dict:
+def cwh_step(state: dict, config: dict, sat_name: str) -> dict:
     """
     GNC step implementing u = v_dot_star - A1*Δr - A2*Δr_dot - Kp*Δr - Kd*Δr_dot
     Returns command acceleration in inertial frame for dynamics propagation.
     """
 
     # Extract chief inertial position
-    r_chief = np.array(state["chief_r"])
-    v_chief = np.array(state["chief_v"])
+    r_chief = np.array(state["chief"]["r"])
+    v_chief = np.array(state["chief"]["v"])
 
     # Extract relative vectors
-    rho_deputy = np.array(state["deputy_rho"])
-    rho_dot_deputy = np.array(state["deputy_rho_dot"])
+    deputy_state = state["deputies"][sat_name]
+    rho_deputy = np.array(deputy_state["rho"])
+    rho_dot_deputy = np.array(deputy_state["rho_dot"])
 
     ## Guidance
     # Extract desired relative position and velocity
     rho_des, rho_dot_des = _get_desired_state_LVLH(
         config.get("guidance", {}).get("rpo", {}).get("frame", "LVLH").upper(),
-        config.get("guidance", {}).get("rpo", {}).get("deputy_desired_relative_state"),
+        config.get("guidance", {}).get("rpo", {}).get("desired_relative_state"),
         r_chief,
         v_chief,
         state.get("sim_time", 0.0)
@@ -97,10 +98,10 @@ def cwh_step(state: dict, config: dict) -> dict:
 
     return {
         "status": "lvlh",
-        "chief_r": state["chief_r"].tolist(),
-        "chief_v": state["chief_v"].tolist(),
-        "deputy_r": state["deputy_r"].tolist(),
-        "deputy_v": state["deputy_v"].tolist(),
+        "chief_r": r_chief.tolist(),
+        "chief_v": v_chief.tolist(),
+        "deputy_r": deputy_state.get("r", np.zeros(3)).tolist(),
+        "deputy_v": deputy_state.get("v", np.zeros(3)).tolist(),
         "deputy_rho": rho_deputy.tolist(),
         "deputy_rho_dot": rho_dot_deputy.tolist(),
         "accel_cmd": u.tolist()

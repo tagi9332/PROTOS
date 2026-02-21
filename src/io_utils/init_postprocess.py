@@ -1,8 +1,13 @@
-def init_postprocess(output_config):
+from dataclasses import dataclass, field
+from typing import Dict, Any
+
+from src.io_utils.init_sim_config import OutputConfig
+
+def init_postprocess(output_config: 'OutputConfig') -> dict:
     postprocess_input = {
-        "trajectory_file": output_config.get("trajectory_file", "data/results/trajectory.csv"),
-        "gnc_file": output_config.get("gnc_file", "data/results/gnc_results.csv"),
-        "plots": output_config.get("plots", True),
+        "trajectory_file": output_config.trajectory_file,
+        "gnc_file": output_config.gnc_file,
+        "plots": output_config.plots,
     }
 
     return postprocess_input

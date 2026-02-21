@@ -1,15 +1,38 @@
 import numpy as np
+from dataclasses import dataclass, field
+from typing import Dict, Any, List, Tuple
+
+from data.resources.constants import MU_EARTH
 from utils.orbital_element_conversions.oe_conversions import oes_to_inertial, lroes_to_inertial, inertial_to_oes
 from utils.frame_conversions.rel_to_inertial_functions import (
     inertial_to_rel_LVLH, rel_vector_to_inertial,
     LVLH_DCM, compute_omega
 )
+from src.io_utils.init_sim_config import SimulationConfig
+
+@dataclass
+class AttitudeState:
+    q_BN: np.ndarray = field(default_factory=lambda: np.array([1, 0, 0, 0]))
+    omega_BN: np.ndarray = field(default_factory=lambda: np.zeros(3))
+
+@dataclass
+class InitialState:
+    frame: str
+    state: np.ndarray
+    attitude: AttitudeState = field(default_factory=AttitudeState)
+
+@dataclass
+class SatelliteConfig:
+    name: str
+    initial_state: InitialState
+    properties: Dict[str, Any] = field(default_factory=dict)
+    gnc: Dict[str, Any] = field(default_factory=dict)
 
 # Initialize chief state
-def _init_chief_state(chief: dict):
-    chief_initial = chief["initial_state"]
-    frame = chief_initial.get("frame", "").upper()
-    chief_vector = np.array(chief_initial["state"])
+def _init_chief_state(chief: SatelliteConfig) -> Tuple[np.ndarray, np.ndarray]:
+    chief_initial = chief.initial_state
+    frame = chief_initial.frame.upper()
+    chief_vector = np.array(chief_initial.state)
 
     if frame == "ECI":
         # Chief given directly in ECI
@@ -18,24 +41,21 @@ def _init_chief_state(chief: dict):
 
     elif frame == "OES":
         # Chief given in orbital elements vector [a, e, i, raan, argp, ta]
-        chief_r, chief_v = oes_to_inertial(*chief_vector, mu=398600.4418, units='deg')
+        chief_r, chief_v = oes_to_inertial(*chief_vector, mu=MU_EARTH, units='deg')
 
     else:
         raise ValueError("Chief initial state must be either ECI or ORBITAL_ELEMENTS")
 
     return chief_r, chief_v
 
-def _init_attitude(satellite: dict):
-    attitude = satellite["initial_state"].get("attitude", {})
-    q_BN = np.array(attitude.get("q_BN", [1, 0, 0, 0]))  # Default to identity quaternion
-    omega_BN = np.array(attitude.get("omega_BN", [0, 0, 0]))     # Default to zero angular velocity
+def _init_attitude(satellite: SatelliteConfig) -> Tuple[np.ndarray, np.ndarray]:
+    attitude = satellite.initial_state.attitude
+    return attitude.q_BN, attitude.omega_BN
 
-    return q_BN, omega_BN
+def _init_deputy_state(deputy: SatelliteConfig, chief_r: np.ndarray, chief_v: np.ndarray, chief: SatelliteConfig) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
 
-def _init_deputy_state(deputy: dict, chief_r: np.ndarray, chief_v: np.ndarray, chief):
-
-    deputy_state = np.array(deputy["initial_state"]["state"])
-    frame = deputy["initial_state"].get("frame", "").upper()
+    deputy_state = deputy.initial_state.state
+    frame = deputy.initial_state.frame.upper()
 
     # ================================
     # CASE 1 — ECI input; r,v in km and km/s
@@ -80,8 +100,8 @@ def _init_deputy_state(deputy: dict, chief_r: np.ndarray, chief_v: np.ndarray, c
     elif frame == "DOES":
         # If chief initial state is given in OEs, use it directly to avoid numerical instability with zero eccentricities
         # (Otherwise, compute from inertial state)
-        if chief["initial_state"].get("frame", "").upper() == "OES":
-            oe_chief = np.array(chief["initial_state"]["state"]) 
+        if chief.initial_state.frame.upper() == "OES":
+            oe_chief = chief.initial_state.state
         else:
             oe_chief = inertial_to_oes(chief_r, chief_v, units='deg')
 
@@ -95,73 +115,105 @@ def _init_deputy_state(deputy: dict, chief_r: np.ndarray, chief_v: np.ndarray, c
         deputy_rho, deputy_rho_dot = inertial_to_rel_LVLH(deputy_r, deputy_v, chief_r, chief_v)
 
     else:
-        raise ValueError("Deputy initial state frame not recognized. Must be one of: ECI, LVLH, LROES, DOES.")
+        raise ValueError(f"Frame '{frame}' not recognized for deputy '{deputy.name}'. Must be one of: ECI, LVLH, LROES, DOES.")
 
     return deputy_r, deputy_v, deputy_rho, deputy_rho_dot
 
 
-def init_satellites(raw_config: dict, sim_config: dict) -> dict:
+def init_satellites(raw_config: dict, sim_config: Any) -> dict:
     """
     Initialize the chief and deputy satellite's states.
     """
-    # Process satellites
-    satellites = raw_config.get("satellites", [])
-
-    # Separate chief and deputy
-    chief = next(sat for sat in satellites if sat["name"].lower() == "chief")
-    deputy = next(sat for sat in satellites if sat["name"].lower() == "deputy")
-
-    # Initialize chief state
-    chief_r, chief_v = _init_chief_state(chief)
-
-    # Initialize deputy state
-    deputy_r, deputy_v, deputy_rho, deputy_rho_dot = _init_deputy_state(deputy, chief_r, chief_v, chief)
-
-    if sim_config.get("simulation_mode", "3DOF").upper() == "6DOF":
-        # Initialize chief attitude
-        q_BN_c, omega_BN_c = _init_attitude(chief)
+    # Parse raw dicts into Dataclasses
+    satellites: List[SatelliteConfig] = []
+    for sat_dict in raw_config.get("satellites", []):
+        att_dict = sat_dict.get("initial_state", {}).get("attitude", {})
+        attitude = AttitudeState(
+            q_BN=np.array(att_dict.get("q_BN", [1, 0, 0, 0])),
+            omega_BN=np.array(att_dict.get("omega_BN", [0, 0, 0]))
+        )
         
-        # Initialize deputy attitude
-        q_BN_d, omega_BN_d = _init_attitude(deputy)
-    else:
-        q_BN_c = np.array([1, 0, 0, 0])  # Identity quaternion
-        omega_BN_c = np.array([0, 0, 0])    # Zero angular velocity
-        q_BN_d = np.array([1, 0, 0, 0])  # Identity quaternion
-        omega_BN_d = np.array([0, 0, 0])    # Zero angular velocity
+        init_state = InitialState(
+            frame=sat_dict.get("initial_state", {}).get("frame", ""),
+            state=np.array(sat_dict.get("initial_state", {}).get("state", [])),
+            attitude=attitude
+        )
+        
+        satellites.append(SatelliteConfig(
+            name=sat_dict["name"],
+            initial_state=init_state,
+            properties=sat_dict.get("properties", {}),
+            gnc=sat_dict.get("gnc", {})
+        ))
 
+    # Identify Chief and Deputies
+    try:
+        chief = next(sat for sat in satellites if sat.name.lower() == "chief")
+    except StopIteration:
+        raise ValueError("A satellite named 'chief' must be present in the configuration.")
+        
+    deputies = [sat for sat in satellites if sat.name.lower() != "chief"]
+
+    # Process Chief State
+    chief_r, chief_v = _init_chief_state(chief)
+    chief_state_dict = {"r": chief_r,
+                         "v": chief_v,
+                         "mass": chief.properties.get("mass", 500.0),
+                         "Cd": chief.properties.get("Cd", 2.2),
+                         "area": chief.properties.get("area", 1.0)
+                        }
     
-    # Dynamics input: inertial positions/velocities + simulation config
+    if sim_config.simulation_mode == "6DOF":
+        q_c, w_c = _init_attitude(chief)
+        chief_state_dict.update({"q_BN": q_c, "omega_BN": w_c})
+
+    # Process Deputy States
+    deputies_state_dict = {}
+    deputies_properties_dict = {}
+    
+    for dep in deputies:
+        r, v, rho, rho_dot = _init_deputy_state(dep, chief_r, chief_v, chief)
+        
+        dep_state = {
+            "r": r, 
+            "v": v, 
+            "rho": rho, 
+            "rho_dot": rho_dot,
+            "mass": dep.properties.get("mass", 500.0),
+            "Cd": dep.properties.get("Cd", 2.2),
+            "area": dep.properties.get("area", 1.0)
+        }
+        
+        if sim_config.simulation_mode == "6DOF":
+            q_d, w_d = _init_attitude(dep)
+            dep_state.update({"q_BN": q_d, "omega_BN": w_d})
+            
+        # Store under the deputy's name
+        deputies_state_dict[dep.name] = dep_state
+        deputies_properties_dict[dep.name] = dep.properties
+
+    # 5. Build Final Outputs
     dynamics_input = {
         "satellite_properties": {
-            "chief": chief.get("properties", {}),
-            "deputy": deputy.get("properties", {})
+            "chief": chief.properties,
+            "deputies": deputies_properties_dict
         },
         "simulation": {
-            "propagator": sim_config.get("propagator", "2BODY").upper(),
-            "perturbations": sim_config.get("perturbations", {},),
-            "simulation_mode": sim_config.get("simulation_mode", "3DOF").upper()
+            "propagator": sim_config.propagator,
+            "perturbations": getattr(sim_config, "perturbations", {}),
+            "simulation_mode": sim_config.simulation_mode
         }  
     }
 
     init_state = {
         "sim_time": 0.0,
-        "epoch": sim_config['epoch'],
-        "chief_r": chief_r,
-        "chief_v": chief_v,
-        "deputy_r": deputy_r,
-        "deputy_v": deputy_v,
-        "deputy_rho": deputy_rho,
-        "deputy_rho_dot": deputy_rho_dot,
+        "epoch": sim_config.epoch,
+        "chief": chief_state_dict,
+        "deputies": deputies_state_dict
     }
-    if sim_config.get("simulation_mode", "3DOF").upper() == "6DOF":
-        init_state.update({
-            "chief_q_BN": q_BN_c,
-            "chief_omega_BN": omega_BN_c,
-            "deputy_q_BN": q_BN_d,
-            "deputy_omega_BN": omega_BN_d
-        })
 
     return {
         "dynamics_input": dynamics_input,
-        "init_state": init_state
+        "init_state": init_state,
+        "parsed_satellites": satellites
     }

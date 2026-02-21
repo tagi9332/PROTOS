@@ -14,6 +14,9 @@ MU_SUN = 1.32712440018e11
 R_EARTH = 6378.137  # km, Earth radius
 R_MOON = 1737.4     # km, Moon radius
 
+# Earth's rotation rate [rad/s]
+OMEGA_EARTH = 7.2921159e-5
+
 # J2 perturbation constant
 J2 = 1.08262668e-3
 

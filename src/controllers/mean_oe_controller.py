@@ -63,27 +63,35 @@ def _B_matrix(a, e, i, argp, ta):
 
     return B
 
-def mean_oe_step(state: dict, config: dict) -> dict:
+def mean_oe_step(state: dict, config: dict, sat_name: str) -> dict:
     """
     GNC step implementing orbit element control law u = - [P]*([B])^T * ([A(oe_actual)] - [A(oe_desired)])
     Returns command acceleration in inertial frame for dynamics propagation.
     """
+    # Extract chief inertial position
+    r_chief = np.array(state["chief"]["r"])
+    v_chief = np.array(state["chief"]["v"])
 
     # Extract deputy inertial position
-    r_d = np.array(state["deputy_r"])
-    v_d = np.array(state["deputy_v"])
+    deputy_state = state["deputies"][sat_name]
+    r_d = np.array(deputy_state["r"])
+    v_d = np.array(deputy_state["v"])
 
     # Convert chief and deputy current inertial to classical orbital elements
-    oe_c = np.array(inertial_to_oes(np.array(state["chief_r"]), np.array(state["chief_v"])))
+    oe_c = np.array(inertial_to_oes(r_chief, v_chief))
     oe_d = np.array(inertial_to_oes(r_d, v_d))
 
+    # Extract guidance configuration and desired state
+    guidance_rpo = config.get("guidance", {}).get("rpo", {})
+    desired_state_dict = guidance_rpo.get("desired_relative_state", {})
+
     # If desired state is given in LVLH, return error message
-    if config["desired_relative_state"].get("frame").upper() != "DOES":
+    if desired_state_dict.get("frame", "").upper() != "DOES":
         raise ValueError("Desired state for mean_OEs control must be given in differential orbital elements (dOEs).")
     
     # Extract deputy control state vector
-    del_oe_des = np.array(config["desired_relative_state"]["state"])
-    del_oe_des[3:] = np.radians(del_oe_des[3:]) # convert angle elements to radians
+    del_oe_des = np.array(desired_state_dict["state"])
+    del_oe_des[3:] = np.radians(del_oe_des[3:])
 
     # Compute desired orbit elements
     oe_d_des = oe_c + del_oe_des
@@ -97,17 +105,18 @@ def mean_oe_step(state: dict, config: dict) -> dict:
 
     # Compute error terms
     error_oe = (oe_d - oe_d_des).reshape(-1,1)
-    error_oe[0] /= r_e  # normalize semi-major axis error by Earth radius
+    error_oe[0] /= r_e # normalize semi-major axis error by Earth radius
 
     # Angle wrapping for i, RAAN, ARGP, mean anomaly
     for idx in range(3,6):
         error_oe[idx] = normalize_angle(error_oe[idx])
 
     # Get gains matrix from config
+    control_gains = config.get("control", {}).get("gains", {})
     P = np.zeros((3, 3))
-    P[0,0] = config.get("control", {}).get("gains", {}).get("K1", 1.0)
-    P[1,1] = config.get("control", {}).get("gains", {}).get("K2", 1.0)
-    P[2,2] = config.get("control", {}).get("gains", {}).get("K3", 1.0)
+    P[0,0] = control_gains.get("K1", 1.0)
+    P[1,1] = control_gains.get("K2", 1.0)
+    P[2,2] = control_gains.get("K3", 1.0)
 
     # PD control
     u = - P @ (B.T @ error_oe).flatten()
@@ -116,7 +125,7 @@ def mean_oe_step(state: dict, config: dict) -> dict:
     C_H_N = LVLH_DCM(r_d, v_d)
 
     # Transform command acceleration to inertial frame
-    u = C_H_N.T @ u  # from LVLH to inertial
+    u = C_H_N.T @ u 
 
     return {
         "accel_cmd": u.tolist()

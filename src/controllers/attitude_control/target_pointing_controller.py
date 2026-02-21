@@ -1,7 +1,7 @@
 import numpy as np
 from utils.six_dof_utils.get_errors import get_errors
 
-def get_target_quaternion(target_vec_i, boresight_vec_b=np.array([0, 0, 1])):
+def _get_target_quaternion(target_vec_i, boresight_vec_b=np.array([0, 0, 1])):
     """
     Computes the shortest-arc quaternion that rotates the boresight vector 
     to align with the target vector.
@@ -44,18 +44,23 @@ def get_target_quaternion(target_vec_i, boresight_vec_b=np.array([0, 0, 1])):
     
     return q_target
 
-def target_pointing_controller(state: dict, config: dict) -> dict:
+def target_pointing_controller(state: dict, config: dict, sat_name: str) -> dict:
     """
-    Target Pointing Attitude Controller for the deputy.
+    Target Pointing Attitude Controller for a deputy satellite.
     """
-    # Config & State Extraction
-    target_type = config.get("guidance", {}).get("attitude_guidance", {}).get("attitude_reference", "VELOCITY").upper()
-    deputy_r = np.array(state.get("deputy_r", [0,0,0]))
-    deputy_v = np.array(state.get("deputy_v", [0,0,0]))
-    deputy_rho = np.array(state.get("deputy_rho", [0,0,0]))
-    
-    q_BN = np.array(state.get("deputy_q_BN", [1,0,0,0]))
-    omega_BN = np.array(state.get("deputy_omega_BN", [0,0,0])) # Actual Rate
+    # Config
+    guidance_dict = config.get('guidance', {})
+    attitude_guidance = guidance_dict.get('attitude_guidance', {})
+    target_type = attitude_guidance.get('attitude_reference', 'VELOCITY').upper()
+
+    # State Extraction
+    deputy_state = state["deputies"][sat_name]
+    deputy_r = np.array(deputy_state["r"])
+    deputy_v = np.array(deputy_state["v"])
+    deputy_rho = np.array(deputy_state["rho"])
+
+    q_BN = np.array(deputy_state["attitude"]["q_BN"])
+    omega_BN = np.array(deputy_state["attitude"]["omega_BN"])
 
     # Determine Inertial Target Vector
     if target_type == "CHIEF":
@@ -67,22 +72,23 @@ def target_pointing_controller(state: dict, config: dict) -> dict:
     elif target_type == "VELOCITY":
         target_vector = deputy_v
     else:
-        raise ValueError(f"Target pointing target '{target_type}' not recognized.")
+        raise ValueError(f"Target pointing target '{target_type}' not recognized for {sat_name}.")
 
     # Normalize
     if np.linalg.norm(target_vector) > 1e-6:
         target_vector = target_vector / np.linalg.norm(target_vector)
     else:
-        # Handle singularity (e.g. at origin)
+        # Handle singularity
         target_vector = np.array([1, 0, 0])
 
     # Control Logic
-    Kp = config.get("control", {}).get("attitude_control_gains", {}).get("Kp", 0.1)
-    Kd = config.get("control", {}).get("attitude_control_gains", {}).get("Kd", 0.01)
+    control_gains = config.get("control", {}).get("attitude_control_gains", {})
+    Kp = control_gains.get("Kp", 1.0)
+    Kd = control_gains.get("Kd",0.01)
     z_B = np.array(config.get("control", {}).get("body_z_axis", [0,0,1]))
 
     # Compute target quaternion
-    q_target = get_target_quaternion(target_vector, z_B)
+    q_target = _get_target_quaternion(target_vector, z_B)
 
     # Compute attitude and rate errors
     att_err_vec, omega_err = get_errors(q_BN, omega_BN, q_target, np.zeros(3))

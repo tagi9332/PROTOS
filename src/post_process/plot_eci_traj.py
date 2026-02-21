@@ -3,23 +3,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def plot_ECI_trajectories(results_serializable, output_dir):
-    states = np.array(results_serializable.get("full_state", []), dtype=float)
-    if len(states) == 0:
+    """
+    Plots the ECI trajectories of the Chief and all Deputies in 3D around Earth.
+    """
+    # Extract Chief data
+    chief_r = np.array(results_serializable.get("chief", {}).get("r", []), dtype=float)
+    deputies = results_serializable.get("deputies", {})
+
+    if len(chief_r) == 0 and not deputies:
         print("No ECI data to plot.")
         return
 
-    # 1. Extract Data
-    chief_r = states[:, 0:3]
-    deputy_r = states[:, 6:9]
-    x_c, y_c, z_c = chief_r.T
-    x_d, y_d, z_d = deputy_r.T
-
-    # 2. Setup Plot
+    # 1. Setup Plot
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111, projection='3d')
     ax.set_box_aspect([1, 1, 1]) 
 
-    # 3. Earth Sphere
+    # 2. Earth Sphere
     R_earth_km = 6378.137
     u = np.linspace(0, 2 * np.pi, 60)
     v = np.linspace(0, np.pi, 60)
@@ -34,24 +34,45 @@ def plot_ECI_trajectories(results_serializable, output_dir):
     ax.plot_wireframe(x_earth, y_earth, z_earth, color='b', alpha=0.6, 
                       rstride=5, cstride=5, linewidth=0.5, label='Earth')
 
-    # 4. Trajectories
-    ax.plot(x_c, y_c, z_c, color='red', label='Chief', linewidth=2)
-    ax.plot(x_d, y_d, z_d, color='blue', label='Deputy', linewidth=1, linestyle='--')
+    # 3. Trajectories & Data Collection (for axis limits)
+    all_data = []
 
-    # 5. Calculate Equal Limits
-    all_data = np.concatenate([x_c, y_c, z_c, x_d, y_d, z_d])
-    max_val = max(np.max(np.abs(all_data)), R_earth_km) * 1.1
+    # Plot Chief
+    if len(chief_r) > 0:
+        ax.plot(chief_r[:, 0], chief_r[:, 1], chief_r[:, 2], 
+                color='red', label='Chief', linewidth=2)
+        all_data.append(chief_r)
 
-    ax.set_xlim(-max_val, max_val)
-    ax.set_ylim(-max_val, max_val)
-    ax.set_zlim(-max_val, max_val)
+    # Plot Deputies with distinct colors
+    colors = plt.cm.tab10.colors  # Grab a nice colormap
+    for i, (sat_name, sat_data) in enumerate(deputies.items()):
+        dep_r = np.array(sat_data.get("r", []), dtype=float)
+        if len(dep_r) > 0:
+            color = colors[i % len(colors)]
+            ax.plot(dep_r[:, 0], dep_r[:, 1], dep_r[:, 2], 
+                    color=color, label=sat_name, linewidth=1.5, linestyle='--')
+            all_data.append(dep_r)
 
-    # 6. Labels
+    # 4. Calculate Equal Limits dynamically based on ALL plotted satellites
+    if all_data:
+        combined_data = np.vstack(all_data)
+        max_val = max(np.max(np.abs(combined_data)), R_earth_km) * 1.1
+
+        ax.set_xlim(-max_val, max_val)
+        ax.set_ylim(-max_val, max_val)
+        ax.set_zlim(-max_val, max_val)
+
+    # 5. Labels and Formatting
     ax.set_xlabel("ECI X (km)")
     ax.set_ylabel("ECI Y (km)")
     ax.set_zlabel("ECI Z (km)")
     ax.set_title("ECI Trajectories")
-    ax.legend()
+    
+    # Earth wireframe adds an empty legend patch, so we filter it out 
+    # to keep the legend looking clean and professional.
+    handles, labels = ax.get_legend_handles_labels()
+    unique_labels = dict(zip(labels, handles))
+    ax.legend(unique_labels.values(), unique_labels.keys(), loc='upper right')
 
     os.makedirs(output_dir, exist_ok=True)
     plt.savefig(os.path.join(output_dir, "trajectory_ECI.png"), dpi=300)

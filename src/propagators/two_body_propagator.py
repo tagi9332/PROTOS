@@ -1,104 +1,61 @@
 import numpy as np
 from scipy.integrate import solve_ivp
-
 from src.propagators.perturbation_accel import compute_perturb_accel
-from utils.frame_conversions.rel_to_inertial_functions import LVLH_DCM, compute_omega
 from data.resources.constants import MU_EARTH, J2000_EPOCH
 
+def step_2body(sat_state: dict, dt: float, config: dict, **kwargs):
+    """
+    Generic 2-body propagator. Moves a single satellite forward by dt.
+    """
+    # Extract state for satellite
+    r_initial = np.array(sat_state["r"])
+    v_initial = np.array(sat_state["v"])
+    u_ctrl = np.array(sat_state.get("accel_cmd", [0, 0, 0]))
+    
+    # Extract properties for satellite
+    mass = sat_state.get("mass", 500.0)
+    drag_params = {
+        "Cd": sat_state.get("Cd", 2.2),
+        "area": sat_state.get("area", 1.0)
+    }
 
-def step_2body(state: dict, dt: float, config: dict):
+    # Global sim settings
+    sim = getattr(config, "simulation", {})
+    perturb_config = getattr(sim, "perturbations", {})
+    epoch = getattr(sat_state, "epoch", J2000_EPOCH)
 
-    chief_r = state["chief_r"]
-    chief_v = state["chief_v"]
-    deputy_r = state["deputy_r"]
-    deputy_v = state["deputy_v"]
-    u_ctrl = state.get("control_accel", np.zeros(3))
-
-    sim = config.get("simulation", {})
-    perturb_config = sim.get("perturbations", {})
-
-    sat_props = config.get("satellite_properties", {})
-    chief_props = sat_props.get("chief", {})
-    deputy_props = sat_props.get("deputy", {})
-
-    chief_mass = config.get("satellites", {}).get("chief", {}).get("mass", 250.0)
-    deputy_mass = config.get("satellites", {}).get("deputy", {}).get("mass", 500.0)
-
-    chief_drag = {"Cd": chief_props.get("Cd", 2.2), "area": chief_props.get("area", 1.0)}
-    deputy_drag = {"Cd": deputy_props.get("Cd", 2.2), "area": deputy_props.get("area", 1.0)}
-
-    epoch = state.get("epoch", J2000_EPOCH)
-
-    # -------------------------------
-    # Dynamics functions for RK4
-    # -------------------------------
-    def chief_dynamics(t,y):
+    # Define the Dynamics
+    def dynamics(t, y):
         r = y[:3]
         v = y[3:]
         r_mag = np.linalg.norm(r)
 
+        # 2-body gravity
         a = -MU_EARTH * r / r_mag**3
-        a += compute_perturb_accel(r, v, perturb_config, chief_drag, chief_mass, epoch)
+        
+        # Perturbations
+        a += compute_perturb_accel(r, v, perturb_config, drag_params, mass, epoch)
+        
+        # Add control
+        a += u_ctrl 
 
         return np.hstack((v, a))
 
-    def deputy_dynamics(t,y):
-        r = y[:3]
-        v = y[3:]
-        r_mag = np.linalg.norm(r)
-
-        a = -MU_EARTH * r / r_mag**3
-        a += compute_perturb_accel(r, v, perturb_config, deputy_drag, deputy_mass, epoch)
-        a += u_ctrl   # control only acts on deputy
-
-        return np.hstack((v, a))
-
-    # -------------------------------
-    # Variable Step Integration
-    # -------------------------------
-    chief_state = np.hstack((chief_r, chief_v))
-    deputy_state = np.hstack((deputy_r, deputy_v))
-
-    chief_sol = solve_ivp(
-        chief_dynamics,
+    # Integration
+    y_0 = np.hstack((r_initial, v_initial))
+    sol = solve_ivp(
+        dynamics,
         (0, dt),
-        chief_state,
+        y_0,
         method='RK45',
         rtol=1e-12,
         atol=1e-12
     )
 
-    deputy_sol = solve_ivp(
-        deputy_dynamics,
-        (0, dt),
-        deputy_state,
-        method='RK45',
-        rtol=1e-12,
-        atol=1e-12
-    )
+    y_final = sol.y[:, -1]
 
-    chief_next = chief_sol.y[:, -1]
-    deputy_next = deputy_sol.y[:, -1]
-
-    chief_r_next = chief_next[:3]
-    chief_v_next = chief_next[3:]
-    deputy_r_next = deputy_next[:3]
-    deputy_v_next = deputy_next[3:]
-
-    # -------------------------------
-    # Relative state computation
-    # -------------------------------
-    C_HN = LVLH_DCM(chief_r_next, chief_v_next)
-    deputy_rho_next = C_HN @ (deputy_r_next - chief_r_next)
-
-    omega = compute_omega(chief_r_next, chief_v_next)
-    deputy_rho_dot_next = C_HN @ (deputy_v_next - chief_v_next) - np.cross(omega, deputy_rho_next)
-
+    # Return updated vectors
     return {
-        "chief_r": chief_r_next,
-        "chief_v": chief_v_next,
-        "deputy_r": deputy_r_next,
-        "deputy_v": deputy_v_next,
-        "deputy_rho": deputy_rho_next,
-        "deputy_rho_dot": deputy_rho_dot_next
+        "r": y_final[:3].tolist(),
+        "v": y_final[3:].tolist()
     }

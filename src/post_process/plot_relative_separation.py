@@ -2,86 +2,86 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 def plot_relative_separation(results_serializable, output_dir):
     """
-    Plot stacked subplots of:
-      1) Relative separation magnitude
-      2) Relative velocity magnitude
-
-    Adds an annotation at the closest separation point.
-
-    Assumes:
-        full_state[:, 12:15] = relative position [km]
-        full_state[:, 15:18] = relative velocity [km/s]
-        time in results_serializable["time"] [s]
+    Plots stacked subplots of relative separation magnitude and relative velocity magnitude
+    for every deputy relative to the chief. Adds an annotation at the closest separation point.
+    Saves individual relative_separation_[sat_name].png files.
     """
-
-    states = np.array(results_serializable.get("full_state", []), dtype=float)
     time = np.array(results_serializable.get("time", []), dtype=float)
+    deputies = results_serializable.get("deputies", {})
 
-    if len(states) == 0 or len(time) == 0:
+    if len(time) == 0 or not deputies:
+        print("Time or deputy data missing. Skipping relative separation plots.")
         return
-
-    # Relative position & velocity in Hill frame
-    rel_pos = states[:, 12:15]     # km
-    rel_vel = states[:, 15:18]     # km/s
-
-    # Magnitudes
-    sep_mag = np.linalg.norm(rel_pos, axis=1)   # km
-    vel_mag = np.linalg.norm(rel_vel, axis=1)   # km/s
-
-    # Closest approach
-    idx_min = np.argmin(sep_mag)
-    t_min = time[idx_min]
-    sep_min = sep_mag[idx_min]
-    vel_min = vel_mag[idx_min]
 
     os.makedirs(output_dir, exist_ok=True)
 
-    # -------------------------
-    # Plot
-    # -------------------------
-    fig, axs = plt.subplots(2, 1, figsize=(9, 7), sharex=True)
+    for sat_name, sat_data in deputies.items():
+        # Extract relative position and velocity (Hill frame)
+        rel_pos = np.array(sat_data.get("rho", []), dtype=float)
+        rel_vel = np.array(sat_data.get("rho_dot", []), dtype=float)
 
-    # ---- Separation magnitude ----
-    axs[0].plot(time, sep_mag, linewidth=2)
-    axs[0].scatter(t_min, sep_min, color='red', zorder=5)
+        # Safety check: ensure data exists and has the correct shape
+        if len(rel_pos) == 0 or len(rel_vel) == 0 or rel_pos.shape[1] != 3 or rel_vel.shape[1] != 3:
+            print(f"[{sat_name}] Missing or invalid 'rho'/'rho_dot' arrays. Skipping plot.")
+            continue
 
-    axs[0].set_ylabel("Separation [km]")
-    axs[0].set_title("Chief–Deputy Relative Motion")
-    axs[0].grid(True)
+        # Magnitudes
+        sep_mag = np.linalg.norm(rel_pos, axis=1)   # km
+        vel_mag = np.linalg.norm(rel_vel, axis=1)   # km/s
 
-    # Annotation (data pointer)
-    annotation_text = (
-        f"Closest Approach\n"
-        f"t = {t_min:.1f} s\n"
-        f"d = {sep_min:.3f} km"
-    )
+        # Closest approach
+        idx_min = np.argmin(sep_mag)
+        t_min = time[idx_min]
+        sep_min = sep_mag[idx_min]
+        vel_min = vel_mag[idx_min]
 
-    axs[0].annotate(
-        annotation_text,
-        xy=(t_min, sep_min),
-        xytext=(0.05, 0.85),
-        textcoords="axes fraction",
-        arrowprops=dict(arrowstyle="->"),
-        bbox=dict(boxstyle="round", fc="white", ec="black")
-    )
+        # -------------------------
+        # Plot
+        # -------------------------
+        fig, axs = plt.subplots(2, 1, figsize=(9, 7), sharex=True)
 
-    # ---- Velocity magnitude ----
-    axs[1].plot(time, vel_mag, linewidth=2)
-    axs[1].scatter(t_min, vel_min, color='red', zorder=5)
+        # ---- Separation magnitude ----
+        axs[0].plot(time, sep_mag, linewidth=2, color='b')
+        axs[0].scatter(t_min, sep_min, color='red', zorder=5)
 
-    axs[1].set_xlabel("Time [s]")
-    axs[1].set_ylabel("Relative Speed [km/s]")
-    axs[1].grid(True)
+        axs[0].set_ylabel("Separation [km]")
+        axs[0].set_title(f"{sat_name} Relative Motion (Chief-Centered)")
+        axs[0].grid(True)
+        axs[0].set_xlim([time[0], time[-1]])
 
-    # -------------------------
-    # Save
-    # -------------------------
-    plt.tight_layout()
-    filename = os.path.join(output_dir, "relative_separation_velocity.png")
-    plt.savefig(filename, dpi=300)
-    plt.close(fig)
+        # Annotation (data pointer)
+        annotation_text = (
+            f"Closest Approach\n"
+            f"t = {t_min:.1f} s\n"
+            f"d = {sep_min:.3f} km"
+        )
 
-    print("Saved relative separation & velocity plot:", filename)
+        axs[0].annotate(
+            annotation_text,
+            xy=(t_min, sep_min),
+            xytext=(0.05, 0.85),
+            textcoords="axes fraction",
+            arrowprops=dict(arrowstyle="->", color='black'),
+            bbox=dict(boxstyle="round", fc="white", ec="black")
+        )
+
+        # ---- Velocity magnitude ----
+        axs[1].plot(time, vel_mag, linewidth=2, color='orange')
+        axs[1].scatter(t_min, vel_min, color='red', zorder=5)
+
+        axs[1].set_xlabel("Time [s]")
+        axs[1].set_ylabel("Relative Speed [km/s]")
+        axs[1].grid(True)
+        axs[1].set_xlim([time[0], time[-1]])
+
+        # -------------------------
+        # Save
+        # -------------------------
+        plt.tight_layout()
+        safe_name = sat_name.replace(" ", "_").lower()
+        filename = os.path.join(output_dir, f"relative_separation_{safe_name}.png")
+        plt.savefig(filename, dpi=300)
+        plt.close(fig)
+

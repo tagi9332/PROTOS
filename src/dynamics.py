@@ -1,6 +1,10 @@
 """
 Dynamics Propagation Module
 """
+import copy
+import numpy as np
+
+from utils.frame_conversions.rel_to_inertial_functions import inertial_to_rel_LVLH
 from src.propagators import (
     step_cwh,
     step_th,
@@ -8,7 +12,7 @@ from src.propagators import (
     q_step
 )
 
-# 1. Registry: Map config strings to propagator functions
+# Map config strings to propagator functions
 PROPAGATOR_REGISTRY = {
     "CWH": step_cwh,
     "TH": step_th,
@@ -17,42 +21,62 @@ PROPAGATOR_REGISTRY = {
 
 def dyn_step(dt: float, state: dict, config: dict) -> dict:
     """
-    Propagate the simulation state one time step forward.
-
-    Handles translational dynamics via the selected propagator and 
-    rotational dynamics (if 6DOF) via quaternion integration.
-
-    Parameters
-    ----------
-    dt : float
-        Time step [s]
-    state : dict
-        Current state dictionary (inertial + relative states)
-    config : dict
-        Dynamics configuration dictionary
-
-    Returns
-    -------
-    dict
-        Next state dictionary
+    Propagate the simulation state one time step forward for all satellites.
     """
-    # Translational Propagation ---
-    # Default to "2BODY" if not specified
-    prop_type = config.get("simulation", {}).get("propagator", "2BODY").upper()
-    
+    # Setup
+    sim_config = config.get("simulation", {})
+    prop_type = getattr(sim_config, "propagator", "2BODY").upper()
+    is_6dof = getattr(sim_config, "simulation_mode", "3DOF").upper() == "6DOF"
+
     propagator_func = PROPAGATOR_REGISTRY.get(prop_type)
-    
     if not propagator_func:
         raise ValueError(f"Unknown propagator '{prop_type}'. Available: {list(PROPAGATOR_REGISTRY.keys())}")
 
-    next_state = propagator_func(state, dt, config)
-
-    # Attitude Propagation (6DOF Only) ---
-    is_6dof = config.get("simulation", {}).get("simulation_mode", "3DOF").upper() == "6DOF"
+    next_state = copy.deepcopy(state)
     
+    # Safely initialize sim_time if it doesn't exist yet
+    next_state["sim_time"] = next_state.get("sim_time", 0.0) + dt
+
+    # ==========================================
+    # 1. PROPAGATE CHIEF
+    # ==========================================
+    # Pass is_chief=True so relative propagators fall back to 2-Body
+    chief_next = propagator_func(state["chief"], dt, config, is_chief=True)
+    next_state["chief"].update(chief_next)
+    
+    # Propagate Chief Attitude (6DOF)
     if is_6dof:
-        # Propagate quaternions and angular velocities
-        att_next = q_step(dt, state, config)
-        next_state.update(att_next)
+        chief_att_next = q_step(dt, state["chief"], config)
+        next_state["chief"].update(chief_att_next)
+
+    # ==========================================
+    # 2. PROPAGATE DEPUTIES
+    # ==========================================
+    for sat_name, sat_data in state["deputies"].items():
+            
+        # Translation - Pass the chief_state so TH/CWH have an LVLH anchor!
+        dep_next = propagator_func(sat_data, dt, config, chief_state=state["chief"])
+        next_state["deputies"][sat_name].update(dep_next)
+
+        # Attitude Propagation (6DOF)
+        if is_6dof:
+            att_next = q_step(dt, sat_data, config)
+            next_state["deputies"][sat_name].update(att_next)
+
+    # ==========================================
+    # 3. UPDATE RELATIVE STATES
+    # ==========================================
+    r_c = np.array(next_state["chief"]["r"])
+    v_c = np.array(next_state["chief"]["v"])
+    
+    for sat_name, sat_data in next_state["deputies"].items():
+        r_d = np.array(sat_data["r"])
+        v_d = np.array(sat_data["v"])
+        
+        # Recompute LVLH relative state based on the newly propagated inertial vectors
+        rho, rho_dot = inertial_to_rel_LVLH(r_d, v_d, r_c, v_c)
+        
+        next_state["deputies"][sat_name]["rho"] = rho.tolist()
+        next_state["deputies"][sat_name]["rho_dot"] = rho_dot.tolist()
 
     return next_state

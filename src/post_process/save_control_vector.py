@@ -2,55 +2,64 @@ import os
 import csv
 import numpy as np
 
-def save_control_accel(results_serializable, output_dir):
-    if "control_accel" not in results_serializable:
-        print("No control accelerations found.")
+def _save_sat_accel_csv(time, accel_data, sat_name, output_dir):
+    """
+    Helper function to calculate delta-v and save the maneuver data 
+    to a CSV file for a single satellite.
+    """
+    accel = np.array(accel_data, dtype=float)
+    if len(accel) == 0 or accel.ndim != 2 or accel.shape[1] != 3:
         return
 
-    time = results_serializable["time"]
-    gnc_results = results_serializable["control_accel"]
+    # ---------------------------------------------------------
+    # Compute delta-v (Vectorized: km/s^2 -> m/s)
+    # ---------------------------------------------------------
+    delta_v = np.zeros_like(accel)
+    dt = np.diff(time)
+    
+    # dt[:, np.newaxis] broadcasts the 1D time diff array to match the 3D accel array
+    delta_v[1:] = accel[1:] * dt[:, np.newaxis] * 1e3 
+
+    # Cumulative absolute delta-v (True fuel expenditure per axis)
+    cumulative_dv = np.cumsum(np.abs(delta_v), axis=0)
 
     # ---------------------------------------------------------
-    # Extract accel_cmd/control_accel as a clean Nx3 array
+    # Save to CSV
     # ---------------------------------------------------------
-    accel_list = []
-
-    for entry in gnc_results:
-        if isinstance(entry, dict):
-            # Prefer accel_cmd; fall back to control_accel
-            accel = entry.get("accel_cmd", entry.get("control_accel"))
-            if accel is None:
-                raise ValueError("GNC result entry missing accel_cmd/control_accel")
-            accel_list.append(np.array(accel, dtype=float))
-        else:
-            # Support legacy Nx3 list format
-            accel_list.append(np.array(entry, dtype=float))
-
-    accel_array = np.vstack(accel_list)  # (N,3)
-
-    # ---------------------------------------------------------
-    # Compute delta-v and cumulative delta-v
-    # ---------------------------------------------------------
-    out_csv = os.path.join(output_dir, "control_accel.csv")
+    safe_name = sat_name.replace(" ", "_").lower()
+    out_csv = os.path.join(output_dir, f"control_accel_{safe_name}.csv")
 
     with open(out_csv, "w", newline="") as f:
         writer = csv.writer(f)
+        
+        # Explicit headers with units!
         writer.writerow([
-            "time", "ax", "ay", "az",
-            "dvx", "dvy", "dvz",
-            "sum_dvx", "sum_dvy", "sum_dvz"
+            "time_s", "ax_km_s2", "ay_km_s2", "az_km_s2",
+            "dvx_m_s", "dvy_m_s", "dvz_m_s",
+            "cum_abs_dvx_m_s", "cum_abs_dvy_m_s", "cum_abs_dvz_m_s"
         ])
 
-        delta_v = np.zeros_like(accel_array)
-
-        for i in range(1, len(time)):
-            dt = time[i] - time[i - 1]
-            delta_v[i] = accel_array[i] * dt
-
-        cumulative = np.cumsum(delta_v, axis=0)
-
         # Write rows
-        for t, a, dv, s in zip(time, accel_array, delta_v, cumulative):
+        for t, a, dv, s in zip(time, accel, delta_v, cumulative_dv):
             writer.writerow([t] + list(a) + list(dv) + list(s))
+            
 
-    print(f"Control accelerations saved to: {out_csv}")
+def save_control_accel(results_serializable, output_dir):
+    """
+    Computes delta-v and saves the control acceleration history to CSV 
+    files for the Chief and all Deputies.
+    """
+    time = np.array(results_serializable.get("time", []), dtype=float)
+    if len(time) < 2:
+        print("Not enough time data to save control accelerations.")
+        return
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # 1. Process Chief
+    chief_accel = results_serializable.get("chief", {}).get("accel_cmd", [])
+    _save_sat_accel_csv(time, chief_accel, "Chief", output_dir)
+
+    # 2. Process Deputies
+    for sat_name, sat_data in results_serializable.get("deputies", {}).items():
+        _save_sat_accel_csv(time, sat_data.get("accel_cmd", []), sat_name, output_dir)

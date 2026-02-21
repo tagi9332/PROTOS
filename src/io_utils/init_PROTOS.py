@@ -5,28 +5,31 @@ from src.io_utils.init_satellites import init_satellites
 from src.io_utils.init_sim_config import init_sim_config
 
 
-def parse_input(file_path: str) -> dict:
+def init_PROTOS(file_path: str) -> dict:
     """
     Parse the JSONX input file and prepare input dictionaries
     for dynamics, GNC, and postprocessing.
     """
+    print(f"Initializing PROTOS with config file: {file_path}")
+
     with open(file_path, "r", encoding="utf-8") as f:
         raw_config = json.load(f) 
 
     config = init_sim_config(raw_config)
-    sim_config = config["simulation"]
-    output_config = config["output"]
+    sim_config = config.simulation
+    output_config = config.output
 
     # -----------------------
     # Dynamics Section Handling
     # -----------------------
-    dyn_config = init_satellites(raw_config, sim_config)
+    dyn_config = init_satellites(raw_config, sim_config) 
     init_state = dyn_config["init_state"]
+    parsed_satellites = dyn_config["parsed_satellites"]
     
     # -----------------------
     # GNC Initialization
     # -----------------------
-    gnc_input = init_gnc(raw_config)
+    gnc_input = init_gnc(parsed_satellites, sim_config)
 
     # -----------------------
     # Postprocessing
@@ -35,7 +38,7 @@ def parse_input(file_path: str) -> dict:
 
     return {
         "simulation": sim_config,
-        "t_eval": config["t_eval"],
+        "t_eval": sim_config.t_eval,
         "dynamics": dyn_config.get("dynamics_input", {}),
         "init_state": init_state,
         "gnc": gnc_input,

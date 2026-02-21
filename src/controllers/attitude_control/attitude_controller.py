@@ -1,23 +1,27 @@
 from src.controllers.attitude_control.target_pointing_controller import target_pointing_controller
 
-def attitude_step(state: dict, config: dict) -> dict:
+def attitude_step(state: dict, config: dict, sat_name: str) -> dict:
     """
-    Choose attitude controller based on input and execute control step. Returns commanded torque for chief and deputy
+    Choose attitude controller based on input and execute control step. 
+    Returns commanded torque and error states for the specific satellite.
     """
-    # Get attitude guidance mode; options: INERTIAL_POINTING, LVLH_POINTING, TARGET_POINTING
-    attitude_guidance_mode = config['guidance']['attitude_guidance']['type'].upper()
+    # Safely get attitude guidance mode for THIS satellite
+    guidance_dict = config.get('guidance', {})
+    attitude_guidance = guidance_dict.get('attitude_guidance', {})
+    attitude_guidance_mode = attitude_guidance.get('type', 'NONE').upper()
+
     if attitude_guidance_mode == "NONE":
+        # Return a zeroed-out command for this specific satellite
         return {
-            "torque_chief": [0.0, 0.0, 0.0],
-            "torque_deputy": [0.0, 0.0, 0.0]
+            "torque_cmd": [0.0, 0.0, 0.0],
+            "att_error": [0.0, 0.0, 0.0, 1.0], # Scalar-last quaternion for zero error
+            "rate_error": [0.0, 0.0, 0.0]
         }
     elif attitude_guidance_mode == "INERTIAL_POINTING":
-        # Not yet implemented
-        raise NotImplementedError("Inertial pointing attitude control not yet implemented.")
+        raise NotImplementedError(f"Inertial pointing not yet implemented for {sat_name}.")
     elif attitude_guidance_mode == "LVLH_POINTING":
-        # Not yet implemented
-        raise NotImplementedError("LVLH pointing attitude control not yet implemented.")
+        raise NotImplementedError(f"LVLH pointing not yet implemented for {sat_name}.")
     elif attitude_guidance_mode == "TARGET_POINTING":
-        return target_pointing_controller(state, config)
+        return target_pointing_controller(state, config, sat_name)
     else:
-        raise ValueError(f"Attitude guidance mode '{attitude_guidance_mode}' not recognized.")
+        raise ValueError(f"Attitude guidance mode '{attitude_guidance_mode}' not recognized for {sat_name}.")
