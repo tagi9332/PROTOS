@@ -9,6 +9,8 @@
     "simulation_mode": "6DOF",            // options: 3DOF, 6DOF
     "perturbations": {
       "J2": false,
+      "J3": false,
+      "J4": false,
       "drag": false,
       "SRP": false
     }
@@ -55,42 +57,43 @@
           [0, 20, 0],
           [0, 0, 10]
         ]
+      },
+      "gnc": {
+        "guidance": {
+          "type": "RPO",                   // options: NONE, RPO
+          "rpo": {
+            "desired_relative_state": [0,0.5,0,0,0,0], // km, km/s in ECI frame, degrees for OEs, radians and km for LROEs
+            "frame": "LVLH",                 // options: LVLH, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA]), LROES ([A0,B0,alpha,beta,x0,y0])
+            "attitude_guidance": {
+                "type": "INERTIAL_POINTING",           // options: INERTIAL_POINTING, LVLH_POINTING, TARGET_POINTING
+                "target_vector_B": [0, 0, 1],       // bore-sight vector in body frame
+                "reference_frame": "ECI",              // options: ECI, LVLH
+                "attitude_reference": "NADIR"        // options: NADIR (points to center of Earth), VELOCITY (points along velocity vector), SUN (points at sun), TARGET (points to target_vector_B)
+            }
+          }
+        },
+        "navigation": {
+          "type": "EKF"                    // options: NONE, EKF ** PLACEHOLDER, does nothing **
+        },
+        "control": {
+          "control_method": "CWH",        // options: cartesian, mean_OEs, CWH
+          "gains": {
+            "K1": 0.00001,                   // proportional gain for cartesian/CWH, first diagonal element for mean_OEs
+            "K2": 0.004,                     // derivative gain for cartesian/CWH, second diagonal element for mean_OEs
+            "K3": 0.0                   // integral gain for cartesian/CWH (not currently used), third diagonal element for mean_OEs
+          },
+          "attitude_control_gains": {
+            "Kp": 0.1,                       // proportional gain
+            "Kd": 0.01                       // derivative gain
+          },
+          "max_thrust": 5,                   // maximum thrust in Newtons (Not currently implemented)
+          "max_torque": 10                  // maximum torque in Newton-meters (Not currently implemented)
+        }
       }
     }
   ],
 
-  "gnc": {
-    "guidance": {
-      "type": "RPO",                   // options: NONE, RPO
-      "rpo": {
-        "desired_relative_state": [0,0.5,0,0,0,0], // km, km/s in ECI frame, degrees for OEs, radians and km for LROEs
-        "frame": "LVLH",                 // options: LVLH, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA]), LROES ([A0,B0,alpha,beta,x0,y0])
-        "attitude_guidance": {
-            "type": "INERTIAL_POINTING",           // options: INERTIAL_POINTING, LVLH_POINTING, TARGET_POINTING
-            "target_vector_B": [0, 0, 1],       // bore-sight vector in body frame
-            "reference_frame": "ECI",              // options: ECI, LVLH
-            "attitude_reference": "NADIR"        // options: NADIR (points to center of Earth), VELOCITY (points along velocity vector), SUN (points at sun), TARGET (points to target_vector_B)
-        }
-      }
-    },
-    "navigation": {
-      "type": "EKF"                    // options: NONE, EKF ** PLACEHOLDER, does nothing **
-    },
-    "control": {
-      "control_method": "CWH",        // options: cartesian, mean_OEs, CWH
-      "gains": {
-        "K1": 0.00001,                   // proportional gain for cartesian/CWH, first diagonal element for mean_OEs
-        "K2": 0.004,                     // derivative gain for cartesian/CWH, second diagonal element for mean_OEs
-        "K3": 0.0                   // integral gain for cartesian/CWH (not currently used), third diagonal element for mean_OEs
-      },
-      "attitude_control_gains": {
-        "Kp": 0.1,                       // proportional gain
-        "Kd": 0.01                       // derivative gain
-      },
-      "max_thrust": 5,                   // maximum thrust in Newtons (Not currently implemented)
-      "max_torque": 10                  // maximum torque in Newton-meters (Not currently implemented)
-    }
-  },
+
 
   "output": {
     "save_trajectory": true,

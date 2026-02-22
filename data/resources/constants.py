@@ -19,6 +19,8 @@ OMEGA_EARTH = 7.2921159e-5
 
 # J2 perturbation constant
 J2 = 1.08262668e-3
+J3 = -2.532153e-6
+J4 = -1.61962159137e-6
 
 # Solar radiation pressure at 1 AU [N/m^2]
 P_SRP = 4.56e-6

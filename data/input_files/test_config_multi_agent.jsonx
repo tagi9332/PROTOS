@@ -1,0 +1,85 @@
+{
+  "scenario": "Test Configuration for Orbit Propagation",
+  
+    "simulation": {
+    "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC
+    "duration": 20000,                  // seconds
+    "time_step": 1,                   // seconds
+    "propagator": "2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
+    "perturbations": {
+      "J2": true,
+      "drag": false,
+      "SRP": false
+    }
+  },
+
+"satellites": [
+    {
+      "name": "Chief",
+      "initial_state": {
+        // "state": [-4893.268, 3864.478, 3169.646, -3.91386, -6.257673, 1.59797], // km, km/s in ECI frame, degrees for OEs
+        // "frame": "ECI"                 // options: ECI (r,v),
+        "state": [-6685.20926,601.51244, 3346.06634, -1.74294, -6.70242, -2.27739], // km, km/s in ECI frame, degrees for OEs
+        "frame": "ECI"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])
+        // "state": [8500,0.2,53,55,40,0], // km, km/s in ECI frame, degrees for OEs
+        // "frame": "OEs"                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])      
+      },
+      "mass": 500.0,
+      "properties": {
+        "area": 10.0,
+        "Cd": 2.2
+      }
+    },
+    {
+      "name": "Deputy_A",
+    "initial_state": {
+      // "state": [0, 0, 0, 0, 0, 200], // km, km/s in ECI frame, degrees for OEs, radians and km for LROEs
+      // "frame": "LROEs"                 // options: LVLH, ECI, RIC, LROEs
+      "state": [-81.22301,248.14201,94.95904, 0.47884, 0.14857, 0.13577], // km, km/s in ECI frame, degrees for OEs
+      "frame": "LVLH"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+      // "state": [1.299038,-1.0000,0.3213938,-0.000844437,-0.00292521, -0.000431250], // km, km/s in ECI frame, degrees for OEs
+      // "frame": "LVLH"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+      // "state": [0,0.001,0.1,0.1,0,0], // km, km/s in ECI frame, degrees for OEs
+      // "frame": "dOEs"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+      // "state": [-4892.98, 3863.073, 3170.619,-3.913302, -6.258661, 1.598199], // km, km/s in ECI frame, degrees for OEs
+      // "frame": "ECI"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+      
+      },
+      "mass": 300.0,
+      "properties": {
+        "area": 10.0,
+        "Cd": 2.0
+      }
+    },
+    {
+      "name": "Deputy_B",
+    "initial_state": {
+      // "state": [0, 0, 0, 0, 0, 200], // km, km/s in ECI frame, degrees for OEs, radians and km for LROEs
+      // "frame": "LROEs"                 // options: LVLH, ECI, RIC, LROEs
+      "state": [-76.22301,248.14201,94.95904, 0.47884, 0.14857, 0.13577], // km, km/s in ECI frame, degrees for OEs
+      "frame": "LVLH"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+      // "state": [1.299038,-1.0000,0.3213938,-0.000844437,-0.00292521, -0.000431250], // km, km/s in ECI frame, degrees for OEs
+      // "frame": "LVLH"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+      // "state": [0,0.001,0.1,0.1,0,0], // km, km/s in ECI frame, degrees for OEs
+      // "frame": "dOEs"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+      // "state": [-4892.98, 3863.073, 3170.619,-3.913302, -6.258661, 1.598199], // km, km/s in ECI frame, degrees for OEs
+      // "frame": "ECI"                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+      
+      },
+      "mass": 300.0,
+      "properties": {
+        "area": 10.0,
+        "Cd": 2.0
+      }
+    }
+  ],
+
+
+  "output": {
+    "save_trajectory": true,
+    "save_gnc_results": true,
+    "trajectory_file": "data/results/two_satellite_sim/trajectory.csv",
+    "gnc_file": "data/results/two_satellite_sim/gnc_results.csv",
+    "plots": true
+  }
+}

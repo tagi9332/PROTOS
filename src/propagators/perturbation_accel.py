@@ -2,25 +2,21 @@ import numpy as np
 from datetime import datetime
 
 from data.resources.constants import MU_EARTH, R_EARTH, J2, P_SRP, OMEGA_EARTH
+from src.io_utils.init_sim_config import PerturbationsConfig
 from utils.perturbation_utils.atmospheric_density_exponential_model import rho_expo_model
 from utils.perturbation_utils.sun_vector_ECI import get_sun_vector_eci
+from utils.perturbation_utils.zonal_harmonics import compute_gravitational_harmonics
 
-def compute_perturb_accel(r: np.ndarray, v: np.ndarray, perturb_config: dict,
+def compute_perturb_accel(r: np.ndarray, v: np.ndarray, perturb_config: PerturbationsConfig,
                           drag_properties: dict, mass: float, epoch: datetime):
     
     a_pert = np.zeros(3)
 
-    # --- J2 Perturbation --- (Working Perfectly)
-    if perturb_config.get("J2", False):
-        r_mag = np.linalg.norm(r)
-        z2 = r[2] ** 2
-        factor = 1.5 * J2 * MU_EARTH * R_EARTH**2 / r_mag**5
-        a_pert[0] -= factor * (1 - 5 * z2 / r_mag**2) * r[0]
-        a_pert[1] -= factor * (1 - 5 * z2 / r_mag**2) * r[1]
-        a_pert[2] -= factor * (3 - 5 * z2 / r_mag**2) * r[2]
+    # --- Zonal Harmonics ---
+    a_pert += compute_gravitational_harmonics(r, perturb_config)
 
     # --- Drag Perturbation --- 
-    if perturb_config.get("drag", False):
+    if getattr(perturb_config, "drag", False):
         r_mag = np.linalg.norm(r) 
         alt = r_mag - R_EARTH      
 
@@ -48,7 +44,7 @@ def compute_perturb_accel(r: np.ndarray, v: np.ndarray, perturb_config: dict,
             a_pert += a_drag
 
     # --- Solar Radiation Pressure --- 
-    if perturb_config.get("SRP", False):
+    if getattr(perturb_config, "SRP", False):
         # 1. Setup properties
         Cr = 1.8 
         A_srp = drag_properties.get("area", 1.0) 

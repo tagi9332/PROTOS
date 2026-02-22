@@ -8,7 +8,9 @@
     "propagator": "2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
     "simulation_mode": "6DOF",    // options: 3DOF, 6DOF
     "perturbations": {
-      "J2": false,
+      "J2": true,
+      "J3": true,
+      "J4": true,
       "drag": false,
       "SRP": false
     }

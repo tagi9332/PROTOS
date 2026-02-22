@@ -126,7 +126,24 @@ def init_satellites(raw_config: dict, sim_config: Any) -> dict:
     """
     # Parse raw dicts into Dataclasses
     satellites: List[SatelliteConfig] = []
+    seen_names = set() # Keep track of names to ensure uniqueness
+
     for sat_dict in raw_config.get("satellites", []):
+        sat_name = sat_dict["name"]
+        lower_name = sat_name.lower()
+
+        # ================================
+        # NAME VALIDATION CHECK
+        # ================================
+        if lower_name in seen_names:
+            if lower_name == "chief":
+                raise ValueError("Multiple satellites named 'chief' (case-insensitive) were found. Only one Chief is allowed.")
+            else:
+                raise ValueError(f"Duplicate satellite name found: '{sat_name}'. All satellites must have unique names.")
+        
+        seen_names.add(lower_name)
+        # ================================
+
         att_dict = sat_dict.get("initial_state", {}).get("attitude", {})
         attitude = AttitudeState(
             q_BN=np.array(att_dict.get("q_BN", [1, 0, 0, 0])),
@@ -140,7 +157,7 @@ def init_satellites(raw_config: dict, sim_config: Any) -> dict:
         )
         
         satellites.append(SatelliteConfig(
-            name=sat_dict["name"],
+            name=sat_name,
             initial_state=init_state,
             properties=sat_dict.get("properties", {}),
             gnc=sat_dict.get("gnc", {})
@@ -148,6 +165,7 @@ def init_satellites(raw_config: dict, sim_config: Any) -> dict:
 
     # Identify Chief and Deputies
     try:
+        # Since we enforced uniqueness, there is guaranteed to be exactly one or zero
         chief = next(sat for sat in satellites if sat.name.lower() == "chief")
     except StopIteration:
         raise ValueError("A satellite named 'chief' must be present in the configuration.")

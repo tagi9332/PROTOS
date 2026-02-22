@@ -29,9 +29,14 @@ This test ensures consistency between PROTOS dynamics and GMAT baseline results
 for Earth orbit propagation including second zonal harmonic perturbations.
 """
 
+#!/usr/bin/env python3
+
+"""
+Regression Test: J2 Perturbation Validation
+"""
+
 import os
 import sys
-
 
 # -------------------------------------------------------------------
 # Setup paths so script can be run from any directory
@@ -40,59 +45,73 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 sys.path.append(PROJECT_ROOT)
 
+import copy
 import numpy as np
 from datetime import timedelta
 from src import dynamics, gnc
 from src.io_utils import init_PROTOS
 from utils.six_dof_utils import update_state_with_gnc
 
-
 def main():
     # --- Initialization ---
-    config = init_PROTOS.init_PROTOS("data/regression_tests/j2_regression_test.jsonx")
+    config = init_PROTOS.init_PROTOS("data/tests/j2_regression_test.jsonx")
     sim_config = config["simulation"]
-    dyn_config = config["dynamics"]
     gnc_config = config["gnc"]
 
-    dt = sim_config.get("time_step", 1)
-    t_eval = np.array(config.get("t_eval"))
-    initial_epoch = sim_config.get("epoch")
-    is_6dof = sim_config.get("simulation_mode", "3DOF").upper() == "6DOF"
+    dt = sim_config.time_step
+    t_eval = sim_config.t_eval
+    initial_epoch = sim_config.epoch
+    is_6dof = sim_config.simulation_mode.upper() == "6DOF"
 
+    # Initialize states
     state = config.get("init_state", {})
-    trajectory = [state.copy()]
+    
+    state["epoch"] = initial_epoch
+    state["chief"]["epoch"] = initial_epoch
+    for sat in state["deputies"].values():
+        sat["epoch"] = initial_epoch
+
+    trajectory = [copy.deepcopy(state)]
     gnc_results = []
 
     # --- Propagation Loop ---
     for _ in t_eval[:-1]:
         # GNC Step
         gnc_out = gnc.gnc_step(state, gnc_config)
-        gnc_results.append(gnc_out)
+        gnc_results.append(copy.deepcopy(gnc_out))
 
         # Update State with GNC Outputs
         update_state_with_gnc(state, gnc_out, is_6dof)
 
-        # Dynamics Step
-        next_state = dynamics.dyn_step(dt, state, dyn_config)
+        # Dynamics Step (Pass the full config dict!)
+        next_state = dynamics.dyn_step(dt, state, config)
 
-        # Update Time & Epoch
-        next_state["sim_time"] = np.array(state.get("sim_time", 0.0) + dt, dtype=np.float64)
-        next_state["epoch"] = state.get("epoch", initial_epoch) + timedelta(seconds=dt) # type: ignore
+        # Update Epoch
+        next_epoch = state.get("epoch", initial_epoch) + timedelta(seconds=dt)
+        next_state["epoch"] = next_epoch
+        next_state["chief"]["epoch"] = next_epoch
+        for sat in next_state["deputies"].values():
+            sat["epoch"] = next_epoch
 
         # Store & Advance
-        trajectory.append(next_state)
+        trajectory.append(copy.deepcopy(next_state))
         state = next_state
 
     # --- Extract final propagated state ---
+    chief = state["chief"]
+    
+    # Grab the first (and presumably only) deputy for this regression test
+    deputy = list(state["deputies"].values())[0]
+
     propagated_state = np.array([
-        state["chief_v"][0], state["chief_v"][1], state["chief_v"][2],
-        state["chief_r"][0], state["chief_r"][1], state["chief_r"][2],
-        state["deputy_v"][0], state["deputy_v"][1], state["deputy_v"][2],
-        state["deputy_r"][0], state["deputy_r"][1], state["deputy_r"][2]
+        chief["v"][0],  chief["v"][1],  chief["v"][2],
+        chief["r"][0],  chief["r"][1],  chief["r"][2],
+        deputy["v"][0], deputy["v"][1], deputy["v"][2],
+        deputy["r"][0], deputy["r"][1], deputy["r"][2]
     ])
 
     # -------------------------------------------------------------------
-    # 5. GMAT reference state (EarthICRF, includes J2)
+    # GMAT reference state (EarthICRF, includes J2)
     # -------------------------------------------------------------------
     gmat_truth = np.array([
         # Chief: VX, VY, VZ, X, Y, Z
@@ -103,7 +122,7 @@ def main():
         6.959710051357102, -7308.410536584149, -3225.782059722917
     ])
 
-    # 6. Compare final propagated state to GMAT truth
+    # Compare final propagated state to GMAT truth
     diff = propagated_state - gmat_truth
     position_error_km = np.linalg.norm(diff[3:6])  # Chief position error
     velocity_error_km_s = np.linalg.norm(diff[0:3])
@@ -111,7 +130,7 @@ def main():
     deputy_velocity_error_km_s = np.linalg.norm(diff[6:9])
 
     # -------------------------------------------------------------------
-    # 7. Print comparison summary
+    # Print comparison summary
     # -------------------------------------------------------------------
     print("\n=== J2 Regression Test: GMAT Comparison ===")
     print(f"{'State Component':<25}{'PROTOS Value':>20}{'GMAT Value':>20}{'Δ (Error)':>20}")

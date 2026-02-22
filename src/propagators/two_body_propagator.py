@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.integrate import solve_ivp
-from src.propagators.perturbation_accel import compute_perturb_accel
+from src.propagators.perturbation_accel import compute_perturb_accel, PerturbationsConfig
 from data.resources.constants import MU_EARTH, J2000_EPOCH
 
 def step_2body(sat_state: dict, dt: float, config: dict, **kwargs):
@@ -20,8 +20,9 @@ def step_2body(sat_state: dict, dt: float, config: dict, **kwargs):
     }
 
     # Global sim settings
-    sim = getattr(config, "simulation", {})
-    perturb_config = getattr(sim, "perturbations", {})
+    sim = config.get("simulation", {})
+    perturb_dict = getattr(sim, "perturbations", {})
+    perturb_config = PerturbationsConfig(**perturb_dict) if isinstance(perturb_dict, dict) else perturb_dict
     epoch = getattr(sat_state, "epoch", J2000_EPOCH)
 
     # Define the Dynamics
