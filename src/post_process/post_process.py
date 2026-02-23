@@ -24,7 +24,7 @@ def post_process(results):
     Master post-processing wrapper. 
     Expects 'results' as a dictionary containing 'time', 'chief', and 'deputies'.
     """
-    print("--- Starting Postprocessing ---")
+    print("Postprocessing results...")
 
     # Initialize directories and get paths
     main_output_dir, vehicle_dirs = setup_output_dir.setup_output_directories(results)
@@ -36,13 +36,13 @@ def post_process(results):
     # A. Combined Results (Saved to main_output_dir)
     # ==========================================
     plot_ECI_trajectories(results, main_output_dir)
-    save_plane_views(results, main_output_dir)
     save_iso_view(results, main_output_dir)
     plot_relative_separation(results, main_output_dir)
 
     # ==========================================
     # B. Vehicle-Specific Results 
     # ==========================================
+    save_plane_views(results, vehicle_dirs)
     save_state_csv(results, vehicle_dirs)
     save_control_accel(results, vehicle_dirs)
     
@@ -63,4 +63,4 @@ def post_process(results):
     # ==========================================
     plot_3d_RIC_trajectory(results, main_output_dir, show_plot=True)
 
-    print(f"--- Postprocess completed. Outputs saved in {main_output_dir} ---")
+    print(f"Postprocess completed. Outputs saved in {main_output_dir}")

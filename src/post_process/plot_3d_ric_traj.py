@@ -107,7 +107,6 @@ def plot_3d_RIC_trajectory(results_serializable, output_dir, show_plot=True):
     # Save as HTML and automatically open
     plot_path = os.path.join(output_dir, 'interactive_RIC_trajectory.html')
     fig.write_html(plot_path)
-    print(f"Saved interactive plot to: {plot_path}")
     
     if show_plot:
         webbrowser.open('file://' + os.path.realpath(plot_path))

@@ -8,6 +8,7 @@ from src import dynamics, gnc
 from src.io_utils import init_PROTOS
 from src.post_process import post_process, package_simulation_results
 from utils.six_dof_utils import update_state_with_gnc
+from utils.print_functions.print_sim_progress import print_sim_progress
 
 def main():
     # --- Initialization ---
@@ -22,6 +23,7 @@ def main():
     t_eval = sim_config.t_eval
     initial_epoch = sim_config.epoch
     is_6dof = sim_config.simulation_mode.upper() == "6DOF"
+    num_steps = len(t_eval) - 1
 
     # Initialize states
     state = config.get("init_state", {})
@@ -35,7 +37,10 @@ def main():
     gnc_results = []
 
     # --- Propagation Loop ---
-    for _ in t_eval[:-1]:
+    for i, _ in enumerate(t_eval[:-1]):
+        # Progress callback
+        print_sim_progress(i + 1, num_steps)
+
         # GNC Step
         gnc_out = gnc.gnc_step(state, gnc_config)
         gnc_results.append(copy.deepcopy(gnc_out))

@@ -2,21 +2,22 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ==============================================================================
-# 2D Plane Views (Individual plots per deputy)
-# ==============================================================================
-def save_plane_views(results_serializable, output_dir):
+def save_plane_views(results_serializable, vehicle_dirs):
     """
     Saves individual static 2D plane views (XY, XZ, YZ) of the relative 
-    trajectory for each deputy in the Hill (LVLH) frame.
+    trajectory for each deputy into their specific results folders.
     """
     deputies = results_serializable.get("deputies", {})
     if not deputies:
         return
 
-    os.makedirs(output_dir, exist_ok=True)
-
     for sat_name, sat_data in deputies.items():
+        # Look up the specific output directory for this deputy
+        # If not found (e.g., chief), skip or default to a main folder
+        sat_output_dir = vehicle_dirs.get(sat_name)
+        if not sat_output_dir:
+            continue
+
         rho = np.array(sat_data.get("rho", []), dtype=float)
         
         # Validate data
@@ -26,9 +27,9 @@ def save_plane_views(results_serializable, output_dir):
         r_x, r_y, r_z = rho[:, 0], rho[:, 1], rho[:, 2]
 
         fig, axs = plt.subplots(1, 3, figsize=(18, 5))
-        fig.suptitle(f'{sat_name} Relative Motion Plane Views (Hill Frame)', fontsize=16)
+        fig.suptitle(f'{sat_name.capitalize()} Relative Motion (Hill Frame)', fontsize=16)
 
-        # 1. In-Plane Motion (Radial vs Along-Track) - "Top Down"
+        # 1. In-Plane Motion (Along-Track vs Radial)
         axs[0].plot(r_y, r_x, label='Trajectory', color='b')
         axs[0].scatter(0, 0, color='r', marker='o', label='Chief')
         axs[0].scatter(r_y[0], r_x[0], color='g', marker='o', label='Start')
@@ -38,9 +39,9 @@ def save_plane_views(results_serializable, output_dir):
         axs[0].set_title('In-Plane Motion (y vs x)')
         axs[0].grid(True)
         axs[0].axis('equal')  
-        axs[0].invert_xaxis() # +y is velocity direction (left)
+        axs[0].invert_xaxis() 
 
-        # 2. Out-of-Plane Motion (Along-Track vs Cross-Track) - "Side View"
+        # 2. Side View (Along-Track vs Cross-Track)
         axs[1].plot(r_y, r_z, color='b')
         axs[1].scatter(0, 0, color='r', marker='o', label='Chief')
         axs[1].scatter(r_y[0], r_z[0], color='g', marker='o', label='Start')
@@ -52,7 +53,7 @@ def save_plane_views(results_serializable, output_dir):
         axs[1].axis('equal')
         axs[1].invert_xaxis()
 
-        # 3. Approach View (Cross-Track vs Radial) - "Barrel View"
+        # 3. Approach View (Cross-Track vs Radial)
         axs[2].plot(r_z, r_x, color='b')
         axs[2].scatter(0, 0, color='r', marker='o', label='Chief')
         axs[2].scatter(r_z[0], r_x[0], color='g', marker='o', label='Start')
@@ -65,8 +66,8 @@ def save_plane_views(results_serializable, output_dir):
 
         axs[0].legend(loc='upper right')
 
-        safe_name = sat_name.replace(" ", "_").lower()
-        filename = os.path.join(output_dir, f"RIC_plane_views_{safe_name}.png")
+        # Save to the deputy-specific folder
+        filename = os.path.join(sat_output_dir, f"RIC_plane_views_{sat_name}.png")
         
         plt.tight_layout()
         plt.savefig(filename, dpi=300)

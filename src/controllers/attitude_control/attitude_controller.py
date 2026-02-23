@@ -1,3 +1,5 @@
+import numpy as np
+
 from src.controllers.attitude_control.target_pointing_controller import target_pointing_controller
 
 def attitude_step(state: dict, config: dict, sat_name: str) -> dict:
@@ -22,6 +24,15 @@ def attitude_step(state: dict, config: dict, sat_name: str) -> dict:
     elif attitude_guidance_mode == "LVLH_POINTING":
         raise NotImplementedError(f"LVLH pointing not yet implemented for {sat_name}.")
     elif attitude_guidance_mode == "TARGET_POINTING":
-        return target_pointing_controller(state, config, sat_name)
+        res = target_pointing_controller(state, config, sat_name)
     else:
         raise ValueError(f"Attitude guidance mode '{attitude_guidance_mode}' not recognized for {sat_name}.")
+
+    # Apply Torque Saturation
+    # Expecting config['control']['max_torque'] as a float or int
+    max_torque = config.get('control', {}).get('max_torque')
+
+    if max_torque is not None:
+        res["torque_cmd"] = np.clip(res["torque_cmd"], -max_torque, max_torque).tolist()
+
+    return res

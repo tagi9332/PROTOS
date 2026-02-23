@@ -3,8 +3,8 @@
   
     "simulation": {
     "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC
-    "duration": 300,                  // simulation duration in seconds
-    "time_step": 1,                   // simulation time step in seconds
+    "duration": 3000,                  // simulation duration in seconds
+    "time_step": 0.1,                   // simulation time step in seconds
     "propagator": "2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
     "simulation_mode": "6DOF",    // options: 3DOF, 6DOF
     "perturbations": {
@@ -93,7 +93,7 @@
             "Kd": 0.1667                       // derivative gain
           },
           "max_thrust": 5,                   // maximum thrust in Newtons (Not currently implemented)
-          "max_torque": 10                  // maximum torque in Newton-meters (Not currently implemented)
+          "max_torque": 0.010                  // maximum torque in Newton-meters (Not currently implemented)
         }
       }
     },
@@ -102,7 +102,7 @@
       "initial_state": {
         // "state": [1,0.001,0.1,0.1,0,0], // km, km/s in ECI frame, degrees for OEs
         // "frame": "dOEs",                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
-        "state": [0,0,2,0,0.05,0], // km, km/s in ECI frame, degrees for OEs
+        "state": [0,-2.05,0,0,0.05,0], // km, km/s in ECI frame, degrees for OEs
         "frame": "LVLH",                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
         "attitude": {
           "q_BN": [1, 0, 0, 0],    // quaternion, defined relative to ECI frame
