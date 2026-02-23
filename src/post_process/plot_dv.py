@@ -1,8 +1,9 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from typing import Dict, Any
 
-def _plot_sat_delta_v(time, accel_data, sat_name, output_dir):
+def _plot_sat_delta_v(time, accel_data, sat_name, specific_dir):
     """
     Helper function to calculate and plot delta-v and cumulative delta-v 
     for a single satellite.
@@ -40,9 +41,9 @@ def _plot_sat_delta_v(time, accel_data, sat_name, output_dir):
         axes[i].set_xlim([time[0], time[-1]])
 
     axes[-1].set_xlabel("Time (s)")
-    fig.suptitle(f"{sat_name} Delta-v per Time Step")
+    fig.suptitle(f"{sat_name.capitalize()} Delta-v per Time Step")
     fig.tight_layout()
-    plt.savefig(os.path.join(output_dir, f"delta_v_{safe_name}.png"), dpi=150)
+    plt.savefig(os.path.join(specific_dir, f"delta_v_{safe_name}.png"), dpi=150)
     plt.close(fig)
 
     # ---------------------------------------------------------
@@ -61,28 +62,30 @@ def _plot_sat_delta_v(time, accel_data, sat_name, output_dir):
         axes[i].set_xlim([time[0], time[-1]])
 
     axes[-1].set_xlabel("Time (s)")
-    fig.suptitle(f"{sat_name} Cumulative Delta-v")
+    fig.suptitle(f"{sat_name.capitalize()} Cumulative Delta-v")
     fig.tight_layout()
-    plt.savefig(os.path.join(output_dir, f"cumulative_delta_v_{safe_name}.png"), dpi=150)
+    plt.savefig(os.path.join(specific_dir, f"cumulative_delta_v_{safe_name}.png"), dpi=150)
     plt.close(fig)
 
 
-def plot_delta_v(results_serializable, output_dir):
+def plot_delta_v(results_serializable: Dict[str, Any], vehicle_dirs: Dict[str, str]):
     """
     Plots the delta-v and cumulative delta-v for the Chief and all Deputies.
-    Saves individual PNG files per spacecraft.
+    Routes individual PNG files to their specific vehicle folders.
     """
     time = np.array(results_serializable.get("time", []), dtype=float)
     if len(time) < 2:
         print("Not enough time data for delta-v plot.")
         return
 
-    os.makedirs(output_dir, exist_ok=True)
+    # REMOVED: os.makedirs(output_dir, exist_ok=True)
 
     # 1. Plot Chief
     chief_accel = results_serializable.get("chief", {}).get("accel_cmd", [])
-    _plot_sat_delta_v(time, chief_accel, "Chief", output_dir)
+    chief_dir = vehicle_dirs.get("chief", "")
+    _plot_sat_delta_v(time, chief_accel, "chief", chief_dir)
 
     # 2. Plot Deputies
     for sat_name, sat_data in results_serializable.get("deputies", {}).items():
-        _plot_sat_delta_v(time, sat_data.get("accel_cmd", []), sat_name, output_dir)
+        dep_dir = vehicle_dirs.get(sat_name, "")
+        _plot_sat_delta_v(time, sat_data.get("accel_cmd", []), sat_name, dep_dir)

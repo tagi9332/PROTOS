@@ -1,8 +1,9 @@
 import os
 import csv
 import numpy as np
+from typing import Dict, Any
 
-def _save_sat_accel_csv(time, accel_data, sat_name, output_dir):
+def _save_sat_accel_csv(time, accel_data, sat_name, specific_dir):
     """
     Helper function to calculate delta-v and save the maneuver data 
     to a CSV file for a single satellite.
@@ -24,10 +25,10 @@ def _save_sat_accel_csv(time, accel_data, sat_name, output_dir):
     cumulative_dv = np.cumsum(np.abs(delta_v), axis=0)
 
     # ---------------------------------------------------------
-    # Save to CSV
+    # Save to CSV in the specific vehicle's directory
     # ---------------------------------------------------------
     safe_name = sat_name.replace(" ", "_").lower()
-    out_csv = os.path.join(output_dir, f"control_accel_{safe_name}.csv")
+    out_csv = os.path.join(specific_dir, f"control_accel_{safe_name}.csv")
 
     with open(out_csv, "w", newline="") as f:
         writer = csv.writer(f)
@@ -44,22 +45,23 @@ def _save_sat_accel_csv(time, accel_data, sat_name, output_dir):
             writer.writerow([t] + list(a) + list(dv) + list(s))
             
 
-def save_control_accel(results_serializable, output_dir):
+def save_control_accel(results_serializable: Dict[str, Any], vehicle_dirs: Dict[str, str]):
     """
     Computes delta-v and saves the control acceleration history to CSV 
-    files for the Chief and all Deputies.
+    files for the Chief and all Deputies. Routes each to its specific directory.
     """
     time = np.array(results_serializable.get("time", []), dtype=float)
     if len(time) < 2:
         print("Not enough time data to save control accelerations.")
         return
 
-    os.makedirs(output_dir, exist_ok=True)
-
     # 1. Process Chief
     chief_accel = results_serializable.get("chief", {}).get("accel_cmd", [])
-    _save_sat_accel_csv(time, chief_accel, "Chief", output_dir)
+    chief_dir = vehicle_dirs.get("chief", "")
+    _save_sat_accel_csv(time, chief_accel, "chief", chief_dir)
 
     # 2. Process Deputies
     for sat_name, sat_data in results_serializable.get("deputies", {}).items():
-        _save_sat_accel_csv(time, sat_data.get("accel_cmd", []), sat_name, output_dir)
+        dep_accel = sat_data.get("accel_cmd", [])
+        dep_dir = vehicle_dirs.get(sat_name, "")
+        _save_sat_accel_csv(time, dep_accel, sat_name, dep_dir)

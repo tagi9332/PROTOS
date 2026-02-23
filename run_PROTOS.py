@@ -11,7 +11,7 @@ from utils.six_dof_utils import update_state_with_gnc
 
 def main():
     # --- Initialization ---
-    input_file_path = "data/input_files/test_config_6dof_rpo.jsonx"
+    input_file_path = "data/input_files/test_config_6dof_rpo_multi_agent.jsonx"
 
     # Load config and extract sim settings
     config = init_PROTOS.init_PROTOS(input_file_path)
@@ -65,7 +65,8 @@ def main():
 
     # --- Post Processing ---
     post_dict = package_simulation_results(trajectory, gnc_results, t_eval, is_6dof)
-    post_process.post_process(post_dict, output_dir="data/results")
+    post_dict["input_file"] = input_file_path 
+    post_process.post_process(post_dict)
 
 if __name__ == "__main__":
     main()

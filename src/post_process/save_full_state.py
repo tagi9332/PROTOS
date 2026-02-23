@@ -1,14 +1,14 @@
 import os
 import csv
 import numpy as np
+from typing import Dict, Any
 
-def _save_single_state_csv(time, sat_data, sat_name, output_dir):
+def _save_single_state_csv(time, sat_data, sat_name, specific_dir):
     """
     Dynamically builds and saves a state CSV for a single spacecraft by checking
     which state keys (ECI, Hill, Attitude) actually exist in its dictionary.
     """
     # 1. Define standard mappings: (dictionary_key, [CSV Headers])
-    # By defining units here, you save yourself future headaches!
     state_map = [
         ("r", ["r_x_km", "r_y_km", "r_z_km"]),
         ("v", ["v_x_kms", "v_y_kms", "v_z_kms"]),
@@ -35,12 +35,11 @@ def _save_single_state_csv(time, sat_data, sat_name, output_dir):
         return
 
     # 3. Stack columns horizontally 
-    # np.column_stack flawlessly combines our 1D time array and 2D Nx3/Nx4 state arrays
     stacked_data = np.column_stack(columns)
 
-    # 4. Save to CSV
+    # 4. Save to CSV in the specific vehicle's directory
     safe_name = sat_name.replace(" ", "_").lower()
-    out_csv = os.path.join(output_dir, f"state_results_{safe_name}.csv")
+    out_csv = os.path.join(specific_dir, f"state_results_{safe_name}.csv")
 
     with open(out_csv, "w", newline="") as f:
         writer = csv.writer(f)
@@ -48,24 +47,28 @@ def _save_single_state_csv(time, sat_data, sat_name, output_dir):
         writer.writerows(stacked_data)
 
 
-def save_state_csv(results_serializable, output_dir):
+def save_state_csv(results_serializable: Dict[str, Any], vehicle_dirs: Dict[str, str]):
     """
     Saves individual state CSV files for the Chief and all Deputies.
-    Dynamically supports both 3DOF and 6DOF state outputs.
+    Routes each file to the specific vehicle's directory.
     """
     time = np.array(results_serializable.get("time", []), dtype=float)
     if len(time) == 0:
         print("No time data available. Skipping state CSV generation.")
         return
 
-    os.makedirs(output_dir, exist_ok=True)
+    # Notice we removed os.makedirs(output_dir) since our wrapper already handles it!
 
     # 1. Process Chief
     chief_data = results_serializable.get("chief", {})
     if chief_data:
-        _save_single_state_csv(time, chief_data, "Chief", output_dir)
+        # Pull the chief's specific folder path
+        chief_dir = vehicle_dirs.get("chief", "")
+        _save_single_state_csv(time, chief_data, "chief", chief_dir)
 
     # 2. Process all Deputies
     deputies = results_serializable.get("deputies", {})
     for sat_name, sat_data in deputies.items():
-        _save_single_state_csv(time, sat_data, sat_name, output_dir)
+        # Pull this specific deputy's folder path
+        dep_dir = vehicle_dirs.get(sat_name, "")
+        _save_single_state_csv(time, sat_data, sat_name, dep_dir)

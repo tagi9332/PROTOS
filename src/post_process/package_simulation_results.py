@@ -8,6 +8,7 @@ def package_simulation_results(trajectory, gnc_results, t_eval, is_6dof):
     # 1. Initialize output dictionary
     post_dict = {
         "time": t_eval.tolist(),
+        "is_6dof": is_6dof,
         "chief": {
             "r": [], "v": [], "accel_cmd": [], 
             "q": [], "omega": [], "torque_cmd": []
@@ -27,8 +28,9 @@ def package_simulation_results(trajectory, gnc_results, t_eval, is_6dof):
     for i, state in enumerate(trajectory):
         # Safely grab the corresponding GNC command for this timestep
         gnc_out = gnc_results[i] if i < len(gnc_results) else {}
+        
+        # Grab Chief directly
         gnc_chief = gnc_out.get("chief", {})
-        gnc_deps = gnc_out.get("deputies", {})
 
         # --- Chief Data ---
         post_dict["chief"]["r"].append(state["chief"].get("r", [0.0, 0.0, 0.0]))
@@ -43,7 +45,9 @@ def package_simulation_results(trajectory, gnc_results, t_eval, is_6dof):
         # --- Deputies Data ---
         for sat_name, sat_data in state["deputies"].items():
             dep_out = post_dict["deputies"][sat_name]
-            dep_gnc = gnc_deps.get(sat_name, {})
+            
+            # FIXED: Grab this specific deputy directly from the root gnc_out dict
+            dep_gnc = gnc_out.get(sat_name, {})
 
             dep_out["r"].append(sat_data.get("r", [0.0, 0.0, 0.0]))
             dep_out["v"].append(sat_data.get("v", [0.0, 0.0, 0.0]))
@@ -69,7 +73,6 @@ def package_simulation_results(trajectory, gnc_results, t_eval, is_6dof):
                  post_dict["deputies"][sat_name]["rate_error"])
 
     # Convert everything to numpy arrays for easy math/plotting downstream
-    # (Optional, but highly recommended for matplotlib)
     post_dict["time"] = np.array(post_dict["time"])
     for key in post_dict["chief"]:
         post_dict["chief"][key] = np.array(post_dict["chief"][key])

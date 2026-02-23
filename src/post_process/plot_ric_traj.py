@@ -74,7 +74,7 @@ def save_plane_views(results_serializable, output_dir):
 
 
 # ==============================================================================
-# 3D Isometric View (Combined Swarm Plot)
+# 3D Isometric View (Combined Plot)
 # ==============================================================================
 def save_iso_view(results_serializable, output_dir):
     """
@@ -116,7 +116,7 @@ def save_iso_view(results_serializable, output_dir):
     ax.set_xlabel('Radial (x) [km]')
     ax.set_ylabel('Along-Track (y) [km]')
     ax.set_zlabel('Cross-Track (z) [km]')
-    ax.set_title('Swarm 3D Isometric View (Hill Frame)')
+    ax.set_title('3D Isometric View (Hill Frame)')
     
     # Calculate Equal Bounding Box for true geometry
     combined_rho = np.vstack(all_rho)
@@ -126,7 +126,7 @@ def save_iso_view(results_serializable, output_dir):
     ax.view_init(elev=30, azim=135)
     ax.legend()
 
-    filename = os.path.join(output_dir, "RIC_iso_view_swarm.png")
+    filename = os.path.join(output_dir, "RIC_iso_view.png")
     plt.savefig(filename, dpi=300)
     plt.close(fig)
 

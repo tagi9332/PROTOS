@@ -1,6 +1,7 @@
 import os
 import csv
 import numpy as np
+from typing import Dict, Any
 from data.resources.constants import MU_EARTH
 from utils.orbital_element_conversions.oe_conversions import inertial_to_oes
 
@@ -22,18 +23,19 @@ def _compute_coes(r_array, v_array):
         
     return coes
 
-def save_orbital_elements(results_serializable, output_dir):
+def save_orbital_elements(results_serializable: Dict[str, Any], vehicle_dirs: Dict[str, str]) -> Dict[str, Any]:
     """
     Computes Classical Orbital Elements (COEs) for the Chief and all Deputies.
-    Saves individual CSV files per spacecraft and returns a nested dictionary
-    of COE data for plotting.
+    Saves individual CSV files per spacecraft into their specific folders and 
+    returns a nested dictionary of COE data for plotting.
     """
     time = np.array(results_serializable.get("time", []), dtype=float)
     if len(time) == 0:
         print("No time data. Skipping orbital_elements.csv.")
         return {}
 
-    os.makedirs(output_dir, exist_ok=True)
+    # REMOVED: os.makedirs(output_dir, exist_ok=True) 
+    
     coes_dict = {"chief": None, "deputies": {}}
 
     # =========================================================
@@ -46,8 +48,10 @@ def save_orbital_elements(results_serializable, output_dir):
         chief_coes = _compute_coes(chief_r, chief_v)
         coes_dict["chief"] = chief_coes
         
-        # Save Chief CSV
-        out_csv = os.path.join(output_dir, "orbital_elements_chief.csv")
+        # USE SPECIFIC DIRECTORY
+        chief_dir = vehicle_dirs.get("chief", "")
+        out_csv = os.path.join(chief_dir, "orbital_elements_chief.csv")
+        
         header = ["time_s", "a_km", "e", "i_deg", "RAAN_deg", "ARGP_deg", "TA_deg"]
         coe_data = np.column_stack([time, chief_coes])
         
@@ -84,9 +88,10 @@ def save_orbital_elements(results_serializable, output_dir):
             "delta_coes": delta_coes
         }
         
-        # Save Deputy CSV
+        # ✅ USE SPECIFIC DIRECTORY
         safe_name = sat_name.replace(" ", "_").lower()
-        out_csv = os.path.join(output_dir, f"orbital_elements_{safe_name}.csv")
+        dep_dir = vehicle_dirs.get(sat_name, "")
+        out_csv = os.path.join(dep_dir, f"orbital_elements_{safe_name}.csv")
         
         header = [
             "time_s", 

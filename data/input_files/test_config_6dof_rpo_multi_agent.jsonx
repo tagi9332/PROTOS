@@ -24,7 +24,7 @@
         "frame": "OEs",                 // options: ECI (r,v), OEs ([a, e, i, RAAN, AOP, TA])   
         "attitude": {
           "q_BN": [1,0,0,0],    // quaternion, defined relative to ECI frame
-          "omega_BN": [0.05,0,0]     // rad/s, body-frame angular rate
+          "omega_BN": [0,0,0]     // rad/s, body-frame angular rate
         }
       },
       "mass": 500.0,  // kg
@@ -39,7 +39,7 @@
       }
     },
     {
-      "name": "Deputy",
+      "name": "Deputy_A",
       "initial_state": {
         // "state": [1,0.001,0.1,0.1,0,0], // km, km/s in ECI frame, degrees for OEs
         // "frame": "dOEs",                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
@@ -67,6 +67,65 @@
             // "deputy_desired_relative_state": [1,0.5,0,0,0,0], // km, km/s in ECI frame, degrees for OEs, radians and km for LROEs
             // "frame": "LVLH"                 // options: LVLH, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA]), LROES ([A0,B0,alpha,beta,x0,y0])
             "desired_relative_state": [1,-2,0,0,-0.5,-0.3], // km, km/s in ECI frame, degrees for OEs, radians and km for LROEs
+            "frame": "LROES"                 // options: LVLH, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA]), LROES ([A0,B0,alpha,beta,x0,y0])
+            // "deputy_desired_relative_state": [0,0,0,0,0,-5], // km, km/s in ECI frame, degrees for OEs, radians and km for LROEs
+            // "frame": "dOEs"                 // options: LVLH, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA]), LROES ([A0,B0,alpha,beta,x0,y0])
+          },
+            "attitude_guidance": {
+              "type": "TARGET_POINTING",           // options: INERTIAL_POINTING, LVLH_POINTING, TARGET_POINTING
+              "target_vector_B": [0, 0, 1],       // bore-sight vector in body frame
+              "reference_frame": "ECI",              // options: ECI, LVLH
+              "attitude_reference": "CHIEF"        // Used in TARGET_POINTING mode; options: NADIR (points to center of Earth), VELOCITY (points along velocity vector), CHIEF (points to chief satellite)
+          }
+        },
+        "navigation": {
+          "type": "EKF"                    // options: NONE, EKF ** PLACEHOLDER, does nothing **
+        },
+        "control": {
+          "control_method": "cartesian",        // options: cartesian, mean_OEs, CWH
+          "gains": {
+            "K1": 0.00001,                   // proportional gain for cartesian/CWH, first diagonal element for mean_OEs
+            "K2": 0.004,                     // derivative gain for cartesian/CWH, second diagonal element for mean_OEs
+            "K3": 0.0                   // integral gain for cartesian/CWH (not currently used), third diagonal element for mean_OEs
+          },
+          "attitude_control_gains": {
+            "Kp": 0.0056,                       // proportional gain
+            "Kd": 0.1667                       // derivative gain
+          },
+          "max_thrust": 5,                   // maximum thrust in Newtons (Not currently implemented)
+          "max_torque": 10                  // maximum torque in Newton-meters (Not currently implemented)
+        }
+      }
+    },
+    {
+      "name": "Deputy_B",
+      "initial_state": {
+        // "state": [1,0.001,0.1,0.1,0,0], // km, km/s in ECI frame, degrees for OEs
+        // "frame": "dOEs",                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+        "state": [0,0,2,0,0.05,0], // km, km/s in ECI frame, degrees for OEs
+        "frame": "LVLH",                 // options: LVLH, ECI, RIC, LROEs, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA])
+        "attitude": {
+          "q_BN": [1, 0, 0, 0],    // quaternion, defined relative to ECI frame
+          "omega_BN": [0.01,0.2,-0.05]     // rad/s, body-frame angular rate
+        }
+      },
+      "mass": 300.0, // kg
+      "properties": {
+        "area": 10.0, // m^2
+        "Cd": 2.0 ,   // scalar
+        "inertia_matrix": [   // only needed for 6DOF simulations, in kg*m^2
+          [10, 0, 0],
+          [0, 5, 0],
+          [0, 0, 7.5]
+        ]
+      },
+      "gnc": {
+        "guidance": {
+          "type": "RPO",                   // options: NONE, RPO
+          "rpo": {
+            // "deputy_desired_relative_state": [1,0.5,0,0,0,0], // km, km/s in ECI frame, degrees for OEs, radians and km for LROEs
+            // "frame": "LVLH"                 // options: LVLH, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA]), LROES ([A0,B0,alpha,beta,x0,y0])
+            "desired_relative_state": [1,-2,0,0,-0.3,-0.5], // km, km/s in ECI frame, degrees for OEs, radians and km for LROEs
             "frame": "LROES"                 // options: LVLH, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA]), LROES ([A0,B0,alpha,beta,x0,y0])
             // "deputy_desired_relative_state": [0,0,0,0,0,-5], // km, km/s in ECI frame, degrees for OEs, radians and km for LROEs
             // "frame": "dOEs"                 // options: LVLH, dOEs ([d_a, d_e, d_i, d_RAAN, d_AOP, d_TA]), LROES ([A0,B0,alpha,beta,x0,y0])

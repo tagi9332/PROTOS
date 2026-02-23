@@ -1,5 +1,7 @@
 import os
 import numpy as np
+from datetime import datetime
+
 from src.post_process import (
     plot_relative_separation,
     save_state_csv,
@@ -13,49 +15,52 @@ from src.post_process import (
     plot_orbital_elements,
     plot_attitude_control,
     plot_control_accel,
-    plot_attitude
+    plot_attitude,
+    setup_output_dir
 )
 
-def post_process(results, output_dir):
+def post_process(results):
     """
     Master post-processing wrapper. 
     Expects 'results' as a dictionary containing 'time', 'chief', and 'deputies'.
     """
-    os.makedirs(output_dir, exist_ok=True)
+    print("--- Starting Postprocessing ---")
+
+    # Initialize directories and get paths
+    main_output_dir, vehicle_dirs = setup_output_dir.setup_output_directories(results)
+
+    is_6dof = results.get("is_6dof", False)
+    time_data = np.array(results.get("time", []), dtype=float)
+
+    # ==========================================
+    # A. Combined Results (Saved to main_output_dir)
+    # ==========================================
+    plot_ECI_trajectories(results, main_output_dir)
+    save_plane_views(results, main_output_dir)
+    save_iso_view(results, main_output_dir)
+    plot_relative_separation(results, main_output_dir)
+
+    # ==========================================
+    # B. Vehicle-Specific Results 
+    # ==========================================
+    save_state_csv(results, vehicle_dirs)
+    save_control_accel(results, vehicle_dirs)
     
-    # 1. Detect 6DOF dynamically
-    is_6dof = "q" in results.get("chief", {})
-    results["is_6dof"] = is_6dof
+    coes_dict = save_orbital_elements(results, vehicle_dirs)
 
-    print(f"Postprocessing results")
-
-    # 2. Extract and Save CSV Data
-    save_state_csv(results, output_dir)
-    save_control_accel(results, output_dir)
-    
-    # save_orbital_elements now dynamically returns the coes_dict we need!
-    coes_dict = save_orbital_elements(results, output_dir)
-
-    # 3. Generate Trajectory Plots
-    plot_ECI_trajectories(results, output_dir)
-    save_plane_views(results, output_dir)
-    save_iso_view(results, output_dir)
-    plot_relative_separation(results, output_dir)
-
-    # 4. Generate Attitude & Control Plots
     if is_6dof:
-        plot_attitude(results, output_dir)
-        plot_attitude_control(results, output_dir)
+        plot_attitude(results, vehicle_dirs)
+        plot_attitude_control(results, vehicle_dirs)
         
-    plot_delta_v(results, output_dir)
-    plot_control_accel(results, output_dir)
+    plot_delta_v(results, vehicle_dirs)
+    plot_control_accel(results, vehicle_dirs)
 
-    # 5. Generate COE Plots
-    if coes_dict:  # Safely checks for non-empty dictionary
-        time = np.array(results.get("time", []), dtype=float)
-        plot_orbital_elements(time, coes_dict, output_dir)
+    if coes_dict:  
+        plot_orbital_elements(time_data, coes_dict, vehicle_dirs)
 
-    # 6. Interactive Plot (Usually best kept last so it doesn't block CSV generation)
-    plot_3d_RIC_trajectory(results, output_dir, show_plot=True)
+    # ==========================================
+    # C. Interactive Plots
+    # ==========================================
+    plot_3d_RIC_trajectory(results, main_output_dir, show_plot=True)
 
-    print(f"--- Postprocess completed. Output saved in {output_dir} ---")
+    print(f"--- Postprocess completed. Outputs saved in {main_output_dir} ---")

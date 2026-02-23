@@ -1,8 +1,9 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from typing import Dict, Any
 
-def _plot_sat_attitude(time, q, w, sat_name, output_dir):
+def _plot_sat_attitude(time, q, w, sat_name, specific_dir):
     """
     Helper function to plot and save quaternions and angular rates for a single satellite.
     """
@@ -21,7 +22,7 @@ def _plot_sat_attitude(time, q, w, sat_name, output_dir):
     for i in range(4):
         axes[0].plot(time, q[:, i], label=q_labels[i])
     axes[0].set_ylabel("Quaternions")
-    axes[0].set_title(f"{sat_name} Attitude Profile")
+    axes[0].set_title(f"{sat_name.capitalize()} Attitude Profile")
     axes[0].grid(True)
     axes[0].legend(loc="upper right")
 
@@ -39,16 +40,18 @@ def _plot_sat_attitude(time, q, w, sat_name, output_dir):
     
     # Clean up the name for file saving (e.g., "Deputy 1" -> "deputy_1")
     safe_name = sat_name.replace(" ", "_").lower()
-    filepath = os.path.join(output_dir, f"attitude_{safe_name}.png")
+    
+    # Use specific directory
+    filepath = os.path.join(specific_dir, f"attitude_{safe_name}.png")
     
     fig.savefig(filepath, dpi=200)
     plt.close(fig)
 
 
-def plot_attitude(results_serializable, output_dir):
+def plot_attitude(results_serializable: Dict[str, Any], vehicle_dirs: Dict[str, str]):
     """
     Plot quaternions and angular rates for the Chief and all Deputies.
-    Saves individual attitude_[sat_name].png files.
+    Routes individual attitude_[sat_name].png files to their specific vehicle folders.
     """
     if not results_serializable.get("is_6dof", False):
         return
@@ -57,17 +60,23 @@ def plot_attitude(results_serializable, output_dir):
     if len(time) == 0:
         return
 
-    os.makedirs(output_dir, exist_ok=True)
+    # REMOVED: os.makedirs(output_dir, exist_ok=True) 
 
     # 1. Plot Chief Attitude
     chief_data = results_serializable.get("chief", {})
     qC = np.array(chief_data.get("q", []))
     wC = np.array(chief_data.get("omega", []))
-    _plot_sat_attitude(time, qC, wC, "Chief", output_dir)
+    
+    # Extract Chief directory
+    chief_dir = vehicle_dirs.get("chief", "")
+    _plot_sat_attitude(time, qC, wC, "chief", chief_dir)
 
     # 2. Plot All Deputies' Attitudes
     deputies = results_serializable.get("deputies", {})
     for sat_name, sat_data in deputies.items():
         qD = np.array(sat_data.get("q", []))
         wD = np.array(sat_data.get("omega", []))
-        _plot_sat_attitude(time, qD, wD, sat_name, output_dir)
+        
+        # Extract Deputy directory
+        dep_dir = vehicle_dirs.get(sat_name, "")
+        _plot_sat_attitude(time, qD, wD, sat_name, dep_dir)
