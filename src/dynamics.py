@@ -34,13 +34,11 @@ def dyn_step(dt: float, state: dict, config: dict) -> dict:
 
     next_state = copy.deepcopy(state)
     
-    # Safely initialize sim_time if it doesn't exist yet
+    # Initialize sim_time if not present
     next_state["sim_time"] = next_state.get("sim_time", 0.0) + dt
 
-    # ==========================================
-    # 1. PROPAGATE CHIEF
-    # ==========================================
-    # Pass is_chief=True so relative propagators fall back to 2-Body
+
+    # PROPAGATE CHIEF
     chief_next = propagator_func(state["chief"], dt, config, is_chief=True)
     next_state["chief"].update(chief_next)
     
@@ -49,12 +47,10 @@ def dyn_step(dt: float, state: dict, config: dict) -> dict:
         chief_att_next = q_step(dt, state["chief"], config)
         next_state["chief"].update(chief_att_next)
 
-    # ==========================================
-    # 2. PROPAGATE DEPUTIES
-    # ==========================================
+    # PROPAGATE DEPUTIES
     for sat_name, sat_data in state["deputies"].items():
             
-        # Translation - Pass the chief_state so TH/CWH have an LVLH anchor!
+        # Translation
         dep_next = propagator_func(sat_data, dt, config, chief_state=state["chief"])
         next_state["deputies"][sat_name].update(dep_next)
 
@@ -63,9 +59,7 @@ def dyn_step(dt: float, state: dict, config: dict) -> dict:
             att_next = q_step(dt, sat_data, config)
             next_state["deputies"][sat_name].update(att_next)
 
-    # ==========================================
-    # 3. UPDATE RELATIVE STATES
-    # ==========================================
+    # UPDATE RELATIVE STATES
     r_c = np.array(next_state["chief"]["r"])
     v_c = np.array(next_state["chief"]["v"])
     

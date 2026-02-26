@@ -12,10 +12,10 @@ def compute_perturb_accel(r: np.ndarray, v: np.ndarray, perturb_config: Perturba
     
     a_pert = np.zeros(3)
 
-    # --- Zonal Harmonics ---
+    # Zonal Harmonics
     a_pert += compute_gravitational_harmonics(r, perturb_config)
 
-    # --- Drag Perturbation --- 
+    # Drag Perturbation
     if getattr(perturb_config, "drag", False):
         r_mag = np.linalg.norm(r) 
         alt = r_mag - R_EARTH      
@@ -43,28 +43,26 @@ def compute_perturb_accel(r: np.ndarray, v: np.ndarray, perturb_config: Perturba
 
             a_pert += a_drag
 
-    # --- Solar Radiation Pressure --- 
+    # Solar Radiation Pressure
     if getattr(perturb_config, "SRP", False):
-        # 1. Setup properties
+        # Setup properties
         Cr = 1.8 
         A_srp = drag_properties.get("area", 1.0) 
         r_sun = get_sun_vector_eci(epoch)
         r_sun_mag = np.linalg.norm(r_sun)
 
-        # 2. Eclipse Model (Cylindrical Shadow)
-        # Project satellite vector onto the Sun vector
+        # Eclipse Model
         s_proj = np.dot(r, r_sun) / r_sun_mag
         
         # Distance from the center axis of the shadow
         d_perp = np.sqrt(np.linalg.norm(r)**2 - s_proj**2)
         
-        # The satellite is in shadow if it's on the night side (s_proj < 0) 
-        # AND it's within the Earth's radius laterally.
+        # Check eclipse state
         in_shadow = (s_proj < 0) and (d_perp < R_EARTH)
 
-        # 3. Apply SRP only if in sunlight
+        # Apply SRP
         if not in_shadow:
-            # Force due to SRP (N) -> P_SRP should be in N/m^2
+            # Force due to SRP (N)
             F_srp = P_SRP * A_srp * Cr
 
             # Acceleration (m/s^2)
@@ -73,7 +71,7 @@ def compute_perturb_accel(r: np.ndarray, v: np.ndarray, perturb_config: Perturba
             # Convert to km/s^2
             a_srp_km_s2 = a_srp_m_s2 / 1000.0
 
-            # Light travels FROM Sun TO Earth, so the push direction is -r_sun
+            # Direction from satellite to sun
             srp_dir = -r_sun / r_sun_mag
 
             a_pert += (a_srp_km_s2 * srp_dir)

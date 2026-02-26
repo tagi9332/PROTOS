@@ -13,7 +13,7 @@ def step_cwh(sat_state: dict, dt: float, config: dict, **kwargs):
     is_chief = kwargs.get("is_chief", False)
     chief_state = kwargs.get("chief_state", {})
     
-    # Safely grab epoch for sun vectors (SRP)
+    # Get epoch for sun vectors (SRP)
     epoch = sat_state.get("epoch", chief_state.get("epoch", 0.0)) 
     sim_config = config.get("simulation", {})
     perturb_config = getattr(sim_config, "perturbations", {})
@@ -44,7 +44,7 @@ def step_cwh(sat_state: dict, dt: float, config: dict, **kwargs):
     # ==========================================
     # 2. DEPUTY PROPAGATION (CWH Relative Dynamics)
     # ==========================================
-    # Chief properties (used as anchor for relative frame)
+    # Chief properties
     c_r = np.array(chief_state.get("r", [0, 0, 0]))
     c_v = np.array(chief_state.get("v", [0, 0, 0]))
     c_mass = chief_state.get("mass", 250.0)
@@ -53,7 +53,7 @@ def step_cwh(sat_state: dict, dt: float, config: dict, **kwargs):
     # Deputy properties
     rho = np.array(sat_state["rho"])
     rho_dot = np.array(sat_state["rho_dot"])
-    u_ctrl = np.array(sat_state.get("accel_cmd", [0.0, 0.0, 0.0])) # Assuming ECI command
+    u_ctrl = np.array(sat_state.get("accel_cmd", [0.0, 0.0, 0.0]))
     d_mass = sat_state.get("mass", 500.0)
     d_drag = {"Cd": sat_state.get("Cd", 2.2), "area": sat_state.get("area", 1.0)}
 
@@ -64,12 +64,12 @@ def step_cwh(sat_state: dict, dt: float, config: dict, **kwargs):
         curr_rho_dot = y[9:12]
         c_r_mag = np.linalg.norm(curr_c_r)
 
-        # A. Chief Dynamics (ECI)
+        # Chief Dynamics (ECI)
         a_chief_2body = -MU_EARTH * curr_c_r / c_r_mag**3
         a_pert_chief_eci = compute_perturb_accel(curr_c_r, curr_c_v, perturb_config, c_drag, c_mass, epoch)
         a_chief_total_eci = a_chief_2body + a_pert_chief_eci
 
-        # B. CWH Dynamics (LVLH)
+        # CWH Dynamics (LVLH)
         n = np.sqrt(MU_EARTH / c_r_mag**3)
         x, y_pos, z = curr_rho
         xd, yd, _ = curr_rho_dot
@@ -79,22 +79,21 @@ def step_cwh(sat_state: dict, dt: float, config: dict, **kwargs):
         az_cwh = -n**2*z
         a_cwh_natural = np.array([ax_cwh, ay_cwh, az_cwh])
 
-        # C. Perturbation Handling
+        # Perturbation Handling
         C_HN = LVLH_DCM(curr_c_r, curr_c_v)
 
-        # FIX: Rotate rho to ECI before cross products
+        # Rotate rho to ECI before cross products
         rho_eci = C_HN.T @ curr_rho
         dep_r_eci = curr_c_r + rho_eci
         
         omega_eci = compute_omega(curr_c_r, curr_c_v) 
-        # Cross ECI with ECI, then add the rotated relative velocity
         dep_v_eci = curr_c_v + np.cross(omega_eci, rho_eci) + (C_HN.T @ curr_rho_dot)
 
         a_pert_deputy_eci = compute_perturb_accel(dep_r_eci, dep_v_eci, perturb_config, d_drag, d_mass, epoch)
         a_diff_eci = a_pert_deputy_eci - a_pert_chief_eci
         a_diff_lvlh = C_HN @ a_diff_eci
 
-        # D. Total Relative Acceleration
+        # Total Relative Acceleration
         u_ctrl_lvlh = C_HN @ u_ctrl 
         a_rel_total_lvlh = a_cwh_natural + a_diff_lvlh + u_ctrl_lvlh
 
@@ -114,7 +113,7 @@ def step_cwh(sat_state: dict, dt: float, config: dict, **kwargs):
     # Reconstruct Deputy ECI using the integrated Chief state
     C_HN_next = LVLH_DCM(next_c_r, next_c_v)
     
-    # FIX: Rotate next_rho to ECI before cross product!
+    # Rotate next_rho to ECI
     next_rho_eci = C_HN_next.T @ next_rho
     next_d_r = next_c_r + next_rho_eci
     

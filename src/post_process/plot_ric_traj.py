@@ -13,7 +13,6 @@ def save_plane_views(results_serializable, vehicle_dirs):
 
     for sat_name, sat_data in deputies.items():
         # Look up the specific output directory for this deputy
-        # If not found (e.g., chief), skip or default to a main folder
         sat_output_dir = vehicle_dirs.get(sat_name)
         if not sat_output_dir:
             continue
@@ -29,7 +28,7 @@ def save_plane_views(results_serializable, vehicle_dirs):
         fig, axs = plt.subplots(1, 3, figsize=(18, 5))
         fig.suptitle(f'{sat_name.capitalize()} Relative Motion (Hill Frame)', fontsize=16)
 
-        # 1. In-Plane Motion (Along-Track vs Radial)
+        # In-Plane Motion (Along-Track vs Radial)
         axs[0].plot(r_y, r_x, label='Trajectory', color='b')
         axs[0].scatter(0, 0, color='r', marker='o', label='Chief')
         axs[0].scatter(r_y[0], r_x[0], color='g', marker='o', label='Start')
@@ -41,7 +40,7 @@ def save_plane_views(results_serializable, vehicle_dirs):
         axs[0].axis('equal')  
         axs[0].invert_xaxis() 
 
-        # 2. Side View (Along-Track vs Cross-Track)
+        # Side View (Along-Track vs Cross-Track)
         axs[1].plot(r_y, r_z, color='b')
         axs[1].scatter(0, 0, color='r', marker='o', label='Chief')
         axs[1].scatter(r_y[0], r_z[0], color='g', marker='o', label='Start')
@@ -53,7 +52,7 @@ def save_plane_views(results_serializable, vehicle_dirs):
         axs[1].axis('equal')
         axs[1].invert_xaxis()
 
-        # 3. Approach View (Cross-Track vs Radial)
+        # Approach View (Cross-Track vs Radial)
         axs[2].plot(r_z, r_x, color='b')
         axs[2].scatter(0, 0, color='r', marker='o', label='Chief')
         axs[2].scatter(r_z[0], r_x[0], color='g', marker='o', label='Start')
@@ -123,7 +122,7 @@ def save_iso_view(results_serializable, output_dir):
     combined_rho = np.vstack(all_rho)
     _set_axes_equal(ax, combined_rho)
 
-    # Set view angle (Elevation, Azimuth) for "Isometric" feel
+    # Set view angle
     ax.view_init(elev=30, azim=135)
     ax.legend()
 
@@ -138,8 +137,6 @@ def _set_axes_equal(ax, data):
     Uses the provided data to calculate the maximum bounds.
     """
     max_val = np.max(np.abs(data))
-    
-    # Adding a 10% buffer so the data doesn't touch the edge of the box
     plot_radius = max_val * 1.1 
 
     ax.set_xlim3d([-plot_radius, plot_radius])

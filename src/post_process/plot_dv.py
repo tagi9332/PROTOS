@@ -16,9 +16,6 @@ def _plot_sat_delta_v(time, accel_data, sat_name, specific_dir):
     # Compute delta-v (Vectorized: km/s^2 -> m/s)
     # ---------------------------------------------------------
     delta_v = np.zeros_like(accel)
-    
-    # np.diff(time) gets dt for all steps instantly.
-    # We slice [1:] to align the dimensions properly.
     dt = np.diff(time) 
     delta_v[1:] = accel[1:] * dt[:, np.newaxis] * 1e3 
 
@@ -52,9 +49,6 @@ def _plot_sat_delta_v(time, accel_data, sat_name, specific_dir):
     fig, axes = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
     labels = [r'Cum $\Delta v_x$', r'Cum $\Delta v_y$', r'Cum $\Delta v_z$']
 
-    # Adding a print statement to the console so you know the total fuel cost!
-    total_dv = cumulative[-1].sum()
-
     for i in range(3):
         axes[i].plot(time, cumulative[:, i], color='r')
         axes[i].set_ylabel(labels[i] + " (m/s)")
@@ -78,14 +72,13 @@ def plot_delta_v(results_serializable: Dict[str, Any], vehicle_dirs: Dict[str, s
         print("Not enough time data for delta-v plot.")
         return
 
-    # REMOVED: os.makedirs(output_dir, exist_ok=True)
 
-    # 1. Plot Chief
+    # Plot Chief
     chief_accel = results_serializable.get("chief", {}).get("accel_cmd", [])
     chief_dir = vehicle_dirs.get("chief", "")
     _plot_sat_delta_v(time, chief_accel, "chief", chief_dir)
 
-    # 2. Plot Deputies
+    # Plot Deputies
     for sat_name, sat_data in results_serializable.get("deputies", {}).items():
         dep_dir = vehicle_dirs.get(sat_name, "")
         _plot_sat_delta_v(time, sat_data.get("accel_cmd", []), sat_name, dep_dir)

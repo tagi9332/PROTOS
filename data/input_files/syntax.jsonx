@@ -86,11 +86,12 @@
             "Kp": 0.1,                       // proportional gain
             "Kd": 0.01                       // derivative gain
           },
-          "max_thrust": 5,                   // maximum thrust in Newtons (Not currently implemented)
-          "max_torque": 10                  // maximum torque in Newton-meters (Not currently implemented)
+          "max_thrust": 5,                   // maximum thrust in Newtons
+          "max_torque": 10                  // maximum torque in Newton-meters
         }
       }
     }
+    // Additional satellites can be added here following the same structure
   ],
 
 

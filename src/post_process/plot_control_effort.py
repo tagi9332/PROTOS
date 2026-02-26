@@ -19,8 +19,6 @@ def plot_control_accel(results_serializable: Dict[str, Any], vehicle_dirs: Dict[
         print("Time data missing. Skipping control accel plots.")
         return
 
-    # REMOVED: os.makedirs(output_dir, exist_ok=True)
-
     # Helper function to generate the plot
     def _plot_single_accel(accel_data, sat_name, specific_dir):
         accel = np.array(accel_data, dtype=float)
@@ -71,8 +69,6 @@ def plot_attitude_control(results_serializable: Dict[str, Any], vehicle_dirs: Di
     if len(time) == 0:
         return
 
-    # REMOVED: os.makedirs(output_dir, exist_ok=True)
-
     # Helper function to generate stacked dynamic subplots
     def _plot_single_attitude_control(sat_data, sat_name, specific_dir):
         torque = np.array(sat_data.get("torque_cmd", []), dtype=float)
@@ -101,7 +97,7 @@ def plot_attitude_control(results_serializable: Dict[str, Any], vehicle_dirs: Di
 
         fig, axes = plt.subplots(num_plots, 1, figsize=(10, 4 * num_plots), sharex=True)
         if num_plots == 1:
-            axes = [axes] # Make it iterable if only 1 plot exists
+            axes = [axes]
 
         colors = ['r', 'g', 'b']
         component_labels = [r'Body frame x', r'Body frame y', r'Body frame z']
@@ -124,11 +120,11 @@ def plot_attitude_control(results_serializable: Dict[str, Any], vehicle_dirs: Di
         fig.savefig(os.path.join(specific_dir, f"attitude_control_{safe_name}.png"), dpi=150)
         plt.close(fig)
 
-    # 1. Plot Chief (Often only has torques, no errors)
+    # Plot Chief (Often only has torques, no errors)
     chief_dir = vehicle_dirs.get("chief", "")
     _plot_single_attitude_control(results_serializable.get("chief", {}), "chief", chief_dir)
 
-    # 2. Plot Deputies
+    # Plot Deputies
     for sat_name, sat_data in results_serializable.get("deputies", {}).items():
         dep_dir = vehicle_dirs.get(sat_name, "")
         _plot_single_attitude_control(sat_data, sat_name, dep_dir)

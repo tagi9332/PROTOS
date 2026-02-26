@@ -92,8 +92,8 @@
             "Kp": 0.0056,                       // proportional gain
             "Kd": 0.1667                       // derivative gain
           },
-          "max_thrust": 5,                   // maximum thrust in Newtons (Not currently implemented)
-          "max_torque": 10                  // maximum torque in Newton-meters (Not currently implemented)
+          "max_thrust": 5,                   // maximum thrust in Newtons
+          "max_torque": 10                  // maximum torque in Newton-meters 
         }
       }
     }

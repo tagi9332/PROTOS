@@ -38,7 +38,7 @@ def _plot_sat_attitude(time, q, w, sat_name, specific_dir):
 
     fig.tight_layout()
     
-    # Clean up the name for file saving (e.g., "Deputy 1" -> "deputy_1")
+    # Clean up the name for file saving
     safe_name = sat_name.replace(" ", "_").lower()
     
     # Use specific directory
@@ -60,9 +60,8 @@ def plot_attitude(results_serializable: Dict[str, Any], vehicle_dirs: Dict[str, 
     if len(time) == 0:
         return
 
-    # REMOVED: os.makedirs(output_dir, exist_ok=True) 
 
-    # 1. Plot Chief Attitude
+    # Plot Chief Attitude
     chief_data = results_serializable.get("chief", {})
     qC = np.array(chief_data.get("q", []))
     wC = np.array(chief_data.get("omega", []))
@@ -71,7 +70,7 @@ def plot_attitude(results_serializable: Dict[str, Any], vehicle_dirs: Dict[str, 
     chief_dir = vehicle_dirs.get("chief", "")
     _plot_sat_attitude(time, qC, wC, "chief", chief_dir)
 
-    # 2. Plot All Deputies' Attitudes
+    # Plot All Deputies' Attitudes
     deputies = results_serializable.get("deputies", {})
     for sat_name, sat_data in deputies.items():
         qD = np.array(sat_data.get("q", []))

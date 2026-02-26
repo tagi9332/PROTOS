@@ -33,7 +33,7 @@ def post_process(results):
     time_data = np.array(results.get("time", []), dtype=float)
 
     # ==========================================
-    # A. Combined Results (Saved to main_output_dir)
+    # A. Combined Results
     # ==========================================
     plot_ECI_trajectories(results, main_output_dir)
     save_iso_view(results, main_output_dir)

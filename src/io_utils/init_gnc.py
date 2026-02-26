@@ -9,15 +9,15 @@ def init_gnc(satellites: List[SatelliteConfig], sim_config: SimulationConfig) ->
     sim_mode = sim_config.simulation_mode.upper()
 
     for sat in satellites:
-            # sat.gnc is guaranteed to be at least an empty dict thanks to our dataclass
+            # Initialize GNC configuration
             gnc_section = sat.gnc
 
-            # Safely extract sub-components, defaulting to new, separate empty dicts
+            # Extract sub-components
             guidance = gnc_section.get("guidance", {})
             navigation = gnc_section.get("navigation", {})
             control = gnc_section.get("control", {})
 
-            # Assemble GNC input for this specific satellite
+            # Assemble GNC input
             gnc_input[sat.name] = {
                 "guidance": guidance,
                 "navigation": navigation,

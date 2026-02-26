@@ -17,11 +17,9 @@ def _save_sat_accel_csv(time, accel_data, sat_name, specific_dir):
     # ---------------------------------------------------------
     delta_v = np.zeros_like(accel)
     dt = np.diff(time)
-    
-    # dt[:, np.newaxis] broadcasts the 1D time diff array to match the 3D accel array
     delta_v[1:] = accel[1:] * dt[:, np.newaxis] * 1e3 
 
-    # Cumulative absolute delta-v (True fuel expenditure per axis)
+    # Cumulative absolute delta-v
     cumulative_dv = np.cumsum(np.abs(delta_v), axis=0)
 
     # ---------------------------------------------------------
@@ -33,7 +31,7 @@ def _save_sat_accel_csv(time, accel_data, sat_name, specific_dir):
     with open(out_csv, "w", newline="") as f:
         writer = csv.writer(f)
         
-        # Explicit headers with units!
+        # Explicit headers
         writer.writerow([
             "time_s", "ax_km_s2", "ay_km_s2", "az_km_s2",
             "dvx_m_s", "dvy_m_s", "dvz_m_s",
@@ -55,12 +53,12 @@ def save_control_accel(results_serializable: Dict[str, Any], vehicle_dirs: Dict[
         print("Not enough time data to save control accelerations.")
         return
 
-    # 1. Process Chief
+    # Process Chief
     chief_accel = results_serializable.get("chief", {}).get("accel_cmd", [])
     chief_dir = vehicle_dirs.get("chief", "")
     _save_sat_accel_csv(time, chief_accel, "chief", chief_dir)
 
-    # 2. Process Deputies
+    # Process Deputies
     for sat_name, sat_data in results_serializable.get("deputies", {}).items():
         dep_accel = sat_data.get("accel_cmd", [])
         dep_dir = vehicle_dirs.get(sat_name, "")

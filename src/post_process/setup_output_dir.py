@@ -8,26 +8,26 @@ def setup_output_directories(results):
     Creates a timestamped main output directory, vehicle-specific subdirectories,
     and generates a simulation summary text file including the run configuration.
     """
-    # 1. Create Timestamped Main Output Directory
+    # Create Timestamped Main Output Directory
     timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     main_output_dir = os.path.join("data", "results", timestamp_str)
     os.makedirs(main_output_dir, exist_ok=True)
     
     vehicle_dirs = {}
 
-    # 2. Set up Chief Directory
+    # Set up Chief Directory
     chief_dir = os.path.join(main_output_dir, "chief")
     os.makedirs(chief_dir, exist_ok=True)
     vehicle_dirs["chief"] = chief_dir
 
-    # 3. Set up Deputy Directories
+    # Set up Deputy Directories
     deputies_dict = results.get("deputies", {})
     for dep_name in deputies_dict.keys():
         dep_dir = os.path.join(main_output_dir, dep_name)
         os.makedirs(dep_dir, exist_ok=True)
         vehicle_dirs[dep_name] = dep_dir
 
-    # 4. Extract basic info and write Simulation Summary Text File
+    # Extract basic info and write Simulation Summary Text File
     is_6dof = results.get("is_6dof", False)
     time_data = np.array(results.get("time", []), dtype=float)
     input_file = results.get("input_file", "")
@@ -49,7 +49,7 @@ def setup_output_directories(results):
             
         f.write("\nNotes:\n-----------------------------\n\n")
 
-        # --- Dump the JSON configuration ---
+        # Dump JSON config file
         f.write("Original Run Configuration:\n")
         f.write("=============================\n")
         if input_file:

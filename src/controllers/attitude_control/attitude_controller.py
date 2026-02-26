@@ -7,16 +7,16 @@ def attitude_step(state: dict, config: dict, sat_name: str) -> dict:
     Choose attitude controller based on input and execute control step. 
     Returns commanded torque and error states for the specific satellite.
     """
-    # Safely get attitude guidance mode for THIS satellite
+    # Safely get attitude guidance mode
     guidance_dict = config.get('guidance', {})
     attitude_guidance = guidance_dict.get('attitude_guidance', {})
     attitude_guidance_mode = attitude_guidance.get('type', 'NONE').upper()
 
     if attitude_guidance_mode == "NONE":
-        # Return a zeroed-out command for this specific satellite
+        # Return a zeroed-out command
         return {
             "torque_cmd": [0.0, 0.0, 0.0],
-            "att_error": [0.0, 0.0, 0.0, 1.0], # Scalar-last quaternion for zero error
+            "att_error": [1.0, 0.0, 0.0, 0.0], # Scalar-first quaternion for zero error
             "rate_error": [0.0, 0.0, 0.0]
         }
     elif attitude_guidance_mode == "INERTIAL_POINTING":
@@ -29,7 +29,6 @@ def attitude_step(state: dict, config: dict, sat_name: str) -> dict:
         raise ValueError(f"Attitude guidance mode '{attitude_guidance_mode}' not recognized for {sat_name}.")
 
     # Apply Torque Saturation
-    # Expecting config['control']['max_torque'] as a float or int
     max_torque = config.get('control', {}).get('max_torque')
 
     if max_torque is not None:

@@ -16,7 +16,7 @@ def _th_derivs(nu, y, e, p, h, u_total_t):
     r_local = p / rho_local
     nu_dot_local = h / r_local**2
     
-    # Scale constant Time-Domain force to Anomaly-Domain
+    # Scale constant
     u_accel_nu = u_total_t / (nu_dot_local**2)
     
     # TH Equations of Motion
@@ -65,7 +65,7 @@ def step_th(sat_state: dict, dt: float, config: dict, **kwargs):
     r_final_mag = p / (1 + e * np.cos(nu_final))
 
     # ==========================================
-    # 2. KEPLERIAN CHIEF PROPAGATION (Gauss f/g)
+    # 2. KEPLERIAN CHIEF PROPAGATION
     # ==========================================
     def get_E(nu, ecc):
         return 2.0 * np.arctan2(np.sqrt(1.0 - ecc) * np.sin(nu/2.0),
@@ -87,19 +87,18 @@ def step_th(sat_state: dict, dt: float, config: dict, **kwargs):
     chief_r_next = f * chief_r + g * chief_v
     chief_v_next = f_dot * chief_r + g_dot * chief_v
 
-    # If this is the chief, we are done! Return its new inertial state.
     if is_chief:
         return {"r": chief_r_next.tolist(), "v": chief_v_next.tolist()}
 
     # ==========================================
-    # 3. DEPUTY PROPAGATION (TH Equations)
+    # 3. DEPUTY PROPAGATION
     # ==========================================
     rho = np.array(sat_state["rho"])
     rho_dot = np.array(sat_state["rho_dot"])
     u_ctrl_t = np.array(sat_state.get("accel_cmd", [0.0, 0.0, 0.0]))
     sim_config = getattr(config.get("simulation", {}), "perturbations", {})
 
-    # Compute differential perturbations utilizing our perfectly clean state dictionary!
+    # Compute differential perturbations
     if sim_config.get("enable_perturbations", False):
         c_mass = chief_state.get("mass", 250.0)
         c_drag = {"Cd": chief_state.get("Cd", 2.2), "area": chief_state.get("area", 1.0)}
@@ -107,7 +106,7 @@ def step_th(sat_state: dict, dt: float, config: dict, **kwargs):
         d_mass = sat_state.get("mass", 500.0)
         d_drag = {"Cd": sat_state.get("Cd", 2.2), "area": sat_state.get("area", 1.0)}
 
-        # Reconstruct deputy inertial state for perturbation calc
+        # Reconstruct deputy inertial state
         deputy_r, deputy_v = rel_vector_to_inertial(rho, rho_dot, chief_r, chief_v)
         
         a_pert_chief = compute_perturb_accel(chief_r, chief_v, sim_config, c_drag, c_mass, epoch)
@@ -119,7 +118,7 @@ def step_th(sat_state: dict, dt: float, config: dict, **kwargs):
     else:
         u_total_t = u_ctrl_t
 
-    # Integration (Anomaly Domain)
+    # Integration
     nu_dot_0 = h_val / r_mag**2 
     rho_prime_0 = rho_dot / nu_dot_0
     y_curr = np.hstack((rho, rho_prime_0))
@@ -135,14 +134,14 @@ def step_th(sat_state: dict, dt: float, config: dict, **kwargs):
     )
     y_final = sol.y[:, -1]
 
-    # Reconstruction (Anomaly -> Time)
+    # Reconstruction
     rho_final = y_final[:3]
     rho_prime_final = y_final[3:]
     
     nu_dot_final = h_val / r_final_mag**2
     rho_dot_final = rho_prime_final * nu_dot_final
 
-    # Reconstruct Final Deputy ECI (using the chief_next we analytically propagated)
+    # Reconstruct Final Deputy ECI
     deputy_r_next, deputy_v_next = rel_vector_to_inertial(rho_final, rho_dot_final, chief_r_next, chief_v_next)
 
     return {

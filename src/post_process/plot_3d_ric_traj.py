@@ -29,7 +29,7 @@ def plot_3d_RIC_trajectory(results_serializable, output_dir, show_plot=True):
 
     colors = px.colors.qualitative.Plotly 
 
-    # --- Variables for tracking the bounding box ---
+    # Variables for tracking the bounding box 
     x_min, x_max = 0.0, 0.0
     y_min, y_max = 0.0, 0.0
     z_min, z_max = 0.0, 0.0
@@ -52,7 +52,7 @@ def plot_3d_RIC_trajectory(results_serializable, output_dir, show_plot=True):
             legendgroup=sat_name 
         ))
 
-        # Start marker (Now shown in legend)
+        # Start marker
         fig.add_trace(go.Scatter3d(
             x=[rel_H[0, 0]], y=[rel_H[0, 1]], z=[rel_H[0, 2]],
             mode='markers',
@@ -62,7 +62,7 @@ def plot_3d_RIC_trajectory(results_serializable, output_dir, show_plot=True):
             showlegend=True
         ))
 
-        # End marker (Now shown in legend)
+        # End marker
         fig.add_trace(go.Scatter3d(
             x=[rel_H[-1, 0]], y=[rel_H[-1, 1]], z=[rel_H[-1, 2]],
             mode='markers',
@@ -77,7 +77,7 @@ def plot_3d_RIC_trajectory(results_serializable, output_dir, show_plot=True):
         y_min, y_max = min(y_min, rel_H[:, 1].min()), max(y_max, rel_H[:, 1].max())
         z_min, z_max = min(z_min, rel_H[:, 2].min()), max(z_max, rel_H[:, 2].max())
 
-    # --- Calculate Cubic Bounding Box Limits ---
+    # Calculate Cubic Bounding Box Limits 
     max_range = max(x_max - x_min, y_max - y_min, z_max - z_min)
     
     x_center = (x_max + x_min) / 2.0
@@ -93,7 +93,7 @@ def plot_3d_RIC_trajectory(results_serializable, output_dir, show_plot=True):
             yaxis_title='Along-track (y) [km]',
             zaxis_title='Cross-track (z) [km]',
             
-            # Apply our calculated uniform limits
+            # Apply calculated uniform limits
             xaxis=dict(range=[x_center - half_range, x_center + half_range]),
             yaxis=dict(range=[y_center - half_range, y_center + half_range]),
             zaxis=dict(range=[z_center - half_range, z_center + half_range]),

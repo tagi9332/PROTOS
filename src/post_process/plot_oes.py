@@ -31,17 +31,16 @@ def plot_orbital_elements(time, coes_dict: Dict[str, Any], vehicle_dirs: Dict[st
         # Prevent the suptitle from overlapping the top subplot
         fig.tight_layout(rect=[0, 0.03, 1, 0.97]) 
         
-        # REMOVED: os.makedirs(output_dir, exist_ok=True)
         plt.savefig(os.path.join(specific_dir, filename), dpi=150)
         plt.close(fig)
 
-    # 1. Plot Chief COEs
+    # Plot Chief COEs
     chief_coes = coes_dict.get("chief")
     chief_dir = vehicle_dirs.get("chief", "")
     if chief_coes is not None:
         plot_set(chief_coes, "Chief Orbital Elements", "coes_chief.png", chief_dir)
 
-    # 2. Plot Deputies COEs & Differential COEs
+    # Plot Deputies COEs & Differential COEs
     deputies = coes_dict.get("deputies", {})
     for sat_name, sat_data in deputies.items():
         safe_name = sat_name.replace(" ", "_").lower()

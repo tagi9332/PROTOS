@@ -10,14 +10,14 @@ def _compute_lvlh_kinematics(r_c: np.ndarray, v_c: np.ndarray):
     expressed in inertial coordinates.
 
     Parameters
-    ----------
+    -
     r_c : ndarray (3,)
         Chief satellite inertial position vector.
     v_c : ndarray (3,)
         Chief satellite inertial velocity vector.
 
     Returns
-    -------
+    -
     omega : ndarray (3,)
         LVLH frame angular velocity (rad/s) in inertial coordinates.
     omega_dot : ndarray (3,)
@@ -47,7 +47,7 @@ def _compute_feedforward(r_c, v_c, r_d_des, rho_des):
         u_d = f(r_c) - f(r_d_des) + rho_ddot_I
 
     Parameters
-    ----------
+    -
     r_c : ndarray (3,)
         Chief inertial position.
     v_c : ndarray (3,)
@@ -62,7 +62,7 @@ def _compute_feedforward(r_c, v_c, r_d_des, rho_des):
         Function computing LVLH-to-inertial DCM.
 
     Returns
-    -------
+    -
     u_d : ndarray (3,)
         Feedforward inertial acceleration
     """
@@ -115,13 +115,13 @@ def cartesian_step(state: dict, config: dict, sat_name: str) -> dict:
     Produces deputy inertial acceleration command.
     """
 
-    # --- Extract states ---
+    # Extract states 
     r_c = np.array(state["chief"]["r"])
     v_c = np.array(state["chief"]["v"])
     r_d = np.array(state["deputies"][sat_name]["r"])
     v_d = np.array(state["deputies"][sat_name]["v"])
 
-    # --- Guidance: desired LVLH relative state ---
+    # Guidance: desired LVLH relative state 
     # Extract guidance congiguration and desired state
     guidance_rpo = config.get("guidance", {}).get("rpo", {})
     rho_des, rho_dot_des = _get_desired_state_LVLH(
@@ -135,15 +135,15 @@ def cartesian_step(state: dict, config: dict, sat_name: str) -> dict:
     # Convert desired LVLH → inertial deputy state
     r_d_des, v_d_des = rel_vector_to_inertial(rho_des, rho_dot_des, r_c, v_c)
 
-    # --- Control gains ---
+    # Control gains 
     kp = config.get("control", {}).get("gains", {}).get("K1", 1.0)
     kd = config.get("control", {}).get("gains", {}).get("K2", 1.0)
 
-    # --- Error terms ---
+    # Error terms 
     error_r = r_d - r_d_des
     error_v = v_d - v_d_des
 
-    # --- Final control law ---
+    # Final control law 
     u = -(grav_accel(r_d) - grav_accel(r_d_des)) \
         - kp * error_r - kd * error_v \
         + _compute_feedforward(r_c, v_c, r_d_des, rho_des)

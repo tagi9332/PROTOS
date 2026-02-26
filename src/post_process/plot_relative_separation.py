@@ -22,14 +22,14 @@ def plot_relative_separation(results_serializable, output_dir):
         rel_pos = np.array(sat_data.get("rho", []), dtype=float)
         rel_vel = np.array(sat_data.get("rho_dot", []), dtype=float)
 
-        # Safety check: ensure data exists and has the correct shape
+        # Ensure data exists and has the correct shape
         if len(rel_pos) == 0 or len(rel_vel) == 0 or rel_pos.shape[1] != 3 or rel_vel.shape[1] != 3:
             print(f"[{sat_name}] Missing or invalid 'rho'/'rho_dot' arrays. Skipping plot.")
             continue
 
         # Magnitudes
-        sep_mag = np.linalg.norm(rel_pos, axis=1)   # km
-        vel_mag = np.linalg.norm(rel_vel, axis=1)   # km/s
+        sep_mag = np.linalg.norm(rel_pos, axis=1)
+        vel_mag = np.linalg.norm(rel_vel, axis=1) 
 
         # Closest approach
         idx_min = np.argmin(sep_mag)
@@ -42,7 +42,7 @@ def plot_relative_separation(results_serializable, output_dir):
         # -------------------------
         fig, axs = plt.subplots(2, 1, figsize=(9, 7), sharex=True)
 
-        # ---- Separation magnitude ----
+        # Separation magnitude
         axs[0].plot(time, sep_mag, linewidth=2, color='b')
         axs[0].scatter(t_min, sep_min, color='red', zorder=5)
 
@@ -67,7 +67,7 @@ def plot_relative_separation(results_serializable, output_dir):
             bbox=dict(boxstyle="round", fc="white", ec="black")
         )
 
-        # ---- Velocity magnitude ----
+        # Velocity magnitude
         axs[1].plot(time, vel_mag, linewidth=2, color='orange')
         axs[1].scatter(t_min, vel_min, color='red', zorder=5)
 

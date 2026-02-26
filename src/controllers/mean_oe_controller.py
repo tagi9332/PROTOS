@@ -20,10 +20,10 @@ def _B_matrix(a, e, i, argp, ta):
     """
 
     # Basic parameters
-    p = a * (1 - e**2)              # semi-latus rectum
-    h = np.sqrt(mu_e * p)           # specific angular momentum
-    r = p / (1 + e * np.cos(ta))     # orbit radius
-    true_lat = ta + argp         # true latitude
+    p = a * (1 - e**2)
+    h = np.sqrt(mu_e * p)
+    r = p / (1 + e * np.cos(ta))
+    true_lat = ta + argp
 
     # Define eta = sqrt(1 - e^2)
     eta = np.sqrt(1 - e**2)

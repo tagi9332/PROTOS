@@ -98,7 +98,7 @@ def _init_deputy_state(deputy: SatelliteConfig, chief_r: np.ndarray, chief_v: np
     # CASE 4 — DOES input (delta orbital elements); [d_a, d_e, d_i, d_raan, d_argp, d_ta]
     # ================================
     elif frame == "DOES":
-        # If chief initial state is given in OEs, use it directly to avoid numerical instability with zero eccentricities
+        # If chief initial state is given in OEs, use it directly
         # (Otherwise, compute from inertial state)
         if chief.initial_state.frame.upper() == "OES":
             oe_chief = chief.initial_state.state
@@ -124,9 +124,9 @@ def init_satellites(raw_config: dict, sim_config: Any) -> dict:
     """
     Initialize the chief and deputy satellite's states.
     """
-    # Parse raw dicts into Dataclasses
+    # Parse raw dicts
     satellites: List[SatelliteConfig] = []
-    seen_names = set() # Keep track of names to ensure uniqueness
+    seen_names = set()
 
     for sat_dict in raw_config.get("satellites", []):
         sat_name = sat_dict["name"]
@@ -165,7 +165,7 @@ def init_satellites(raw_config: dict, sim_config: Any) -> dict:
 
     # Identify Chief and Deputies
     try:
-        # Since we enforced uniqueness, there is guaranteed to be exactly one or zero
+
         chief = next(sat for sat in satellites if sat.name.lower() == "chief")
     except StopIteration:
         raise ValueError("A satellite named 'chief' must be present in the configuration.")
@@ -212,7 +212,7 @@ def init_satellites(raw_config: dict, sim_config: Any) -> dict:
         deputies_state_dict[dep.name] = dep_state
         deputies_properties_dict[dep.name] = dep.properties
 
-    # 5. Build Final Outputs
+    # Build Final Outputs
     dynamics_input = {
         "satellite_properties": {
             "chief": chief.properties,

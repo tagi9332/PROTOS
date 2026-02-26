@@ -51,7 +51,7 @@ def init_sim_config(raw_config: dict) -> SimConfig:
     else:
         epoch_val = dateutil.parser.isoparse("2000-01-01T12:00:00Z")
 
-    # Initialize perturbations config    perturb_raw = sim_raw.get("perturbations", {})
+    # Initialize perturbations config
     pert_raw = sim_raw.get("perturbations", {})
     perturb_config = PerturbationsConfig(
         J2=pert_raw.get("J2", False),

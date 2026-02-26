@@ -13,8 +13,6 @@ def _compute_coes(r_array, v_array):
     n_steps = len(r_array)
     coes = np.zeros((n_steps, 6))
     
-    # We keep the loop here assuming the external inertial_to_oes 
-    # utility function is not natively vectorized.
     for k in range(n_steps):
         a, e, i, raan, argp, ta = inertial_to_oes(
             r_array[k], v_array[k], MU_EARTH, 'deg'
@@ -33,8 +31,6 @@ def save_orbital_elements(results_serializable: Dict[str, Any], vehicle_dirs: Di
     if len(time) == 0:
         print("No time data. Skipping orbital_elements.csv.")
         return {}
-
-    # REMOVED: os.makedirs(output_dir, exist_ok=True) 
     
     coes_dict = {"chief": None, "deputies": {}}
 
@@ -61,7 +57,7 @@ def save_orbital_elements(results_serializable: Dict[str, Any], vehicle_dirs: Di
             writer.writerows(coe_data)
     else:
         print("Missing or invalid Chief state data. Cannot compute Chief COEs.")
-        return coes_dict # Cannot compute relative elements without the Chief
+        return coes_dict
 
     # =========================================================
     # 2. Process Deputies
@@ -79,7 +75,7 @@ def save_orbital_elements(results_serializable: Dict[str, Any], vehicle_dirs: Di
         # Absolute COEs
         dep_coes = _compute_coes(dep_r, dep_v)
         
-        # Differential COEs (wrapping angular differences cleanly)
+        # Differential COEs
         delta_coes = dep_coes - chief_coes
         
         # Save to Dictionary
@@ -88,7 +84,7 @@ def save_orbital_elements(results_serializable: Dict[str, Any], vehicle_dirs: Di
             "delta_coes": delta_coes
         }
         
-        # ✅ USE SPECIFIC DIRECTORY
+        # Use specified directory
         safe_name = sat_name.replace(" ", "_").lower()
         dep_dir = vehicle_dirs.get(sat_name, "")
         out_csv = os.path.join(dep_dir, f"orbital_elements_{safe_name}.csv")

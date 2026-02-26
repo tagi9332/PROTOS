@@ -5,16 +5,16 @@ def q_step(dt: float, sat_state: dict, config: dict, **kwargs):
     """
     Propagates the attitude kinematics and dynamics for a single satellite.
     """
-    # 2. Extract State for THIS satellite
+    # Extract State
     q_BN = np.array(sat_state.get('q_BN', [1.0, 0.0, 0.0, 0.0]))
     omega_BN = np.array(sat_state.get('omega_BN', [0.0, 0.0, 0.0]))
     
-    # 3. Extract Control and Properties for THIS satellite
+    # Extract Control and Properties
     torque_cmd = np.array(sat_state.get('torque_cmd', [0.0, 0.0, 0.0]))
     J = np.array(sat_state.get('inertia_matrix', np.eye(3))) 
     J_inv = np.linalg.inv(J)
 
-    # 4. Dynamics Function
+    # Dynamics Function
     def dynamics_func(t, y):
         q = y[0:4]
         omega = y[4:7]
@@ -28,12 +28,12 @@ def q_step(dt: float, sat_state: dict, config: dict, **kwargs):
         ])
         q_dot = 0.5 * Omega @ q
         
-        # Dynamics (torque must be in BODY frame)
+        # Dynamics
         w_dot = J_inv @ (torque_cmd - np.cross(omega, J @ omega))
         
         return np.concatenate([q_dot, w_dot])
 
-    # 5. Integrate
+    # Integrate
     y0 = np.concatenate([q_BN, omega_BN])
     
     sol = solve_ivp(
@@ -47,9 +47,9 @@ def q_step(dt: float, sat_state: dict, config: dict, **kwargs):
     
     y_next = sol.y[:, -1]
 
-    # 6. Normalize & Return
+    # Normalize & Return
     q_next = y_next[0:4]
-    q_next = q_next / np.linalg.norm(q_next) # Re-normalize quaternion to prevent drift
+    q_next = q_next / np.linalg.norm(q_next)
     omega_next = y_next[4:7]
 
     return {
