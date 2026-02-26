@@ -4,7 +4,7 @@
 PROTOS is a modular Python-based simulation framework for modeling spacecraft relative motion, guidance, navigation, and control (GNC) in multi-satellite scenarios. It provides time-stepped execution of dynamics with selectable propagators and controllers, optional perturbations, and postprocessing tools for trajectory visualization and data export.
 
 ## Key Features
-* **Modular structure:** I/O, dynamics, GNC, and postprocessing for n-number of satellites
+* **Modular structure:** I/O, dynamics, GNC, and postprocessing for *n*-number of satellites
 * **Configurable:** Driven by JSONX input files.
 * **Multiple propagators:**
     * **CWH** (Clohessy-Wiltshire-Hill equations)
