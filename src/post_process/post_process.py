@@ -16,6 +16,7 @@ from src.post_process import (
     plot_attitude_control,
     plot_control_accel,
     plot_attitude,
+    animate_6dof_states,
     setup_output_dir
 )
 
@@ -38,6 +39,7 @@ def post_process(results):
     plot_ECI_trajectories(results, main_output_dir)
     save_iso_view(results, main_output_dir)
     plot_relative_separation(results, main_output_dir)
+    animate_6dof_states(results, main_output_dir)
 
     # ==========================================
     # B. Vehicle-Specific Results 
