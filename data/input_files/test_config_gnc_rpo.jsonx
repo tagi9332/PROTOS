@@ -67,10 +67,9 @@
 
 
   "output": {
-    "save_trajectory": true,
+    "save_orbit_elements": true,
     "save_gnc_results": true,
-    "trajectory_file": "data/results/two_satellite_sim/trajectory.csv",
-    "gnc_file": "data/results/two_satellite_sim/gnc_results.csv",
-    "plots": true
+    "plots": true,
+    "animate_trajectory": true
   }
 }

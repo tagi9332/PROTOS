@@ -56,6 +56,6 @@ def init_PROTOS(file_path: str) -> dict:
         "dynamics": dyn_config.get("dynamics_input", {}),
         "init_state": init_state,
         "gnc": gnc_input,
-        "postprocess": postprocess_input,
+        "post_process": postprocess_input,
         "raw": raw_config
     }

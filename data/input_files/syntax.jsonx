@@ -97,10 +97,9 @@
 
 
   "output": {
-    "save_trajectory": true,
-    "save_gnc_results": true,
-    "trajectory_file": "data/results/two_satellite_sim/trajectory.csv",
-    "gnc_file": "data/results/two_satellite_sim/gnc_results.csv",
-    "plots": true
+    "save_orbit_elements": true, // Saves orbital elements in addition to state vectors
+    "save_gnc_results": true, // Saves GNC outputs, if GNC is not enables this produces empty plots and files
+    "plots": true, // Generates plots of the results
+    "animate_trajectory": true // Generates an animation of the trajectory, adds a significant amount of time to post-processing
   }
 }

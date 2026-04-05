@@ -5,8 +5,9 @@ from src.io_utils.init_sim_config import OutputConfig
 
 def init_postprocess(output_config: 'OutputConfig') -> dict:
     postprocess_input = {
-        "trajectory_file": output_config.trajectory_file,
-        "gnc_file": output_config.gnc_file,
+        "save_gnc_results": output_config.save_gnc_results,
+        "save_orbit_elements": output_config.save_orbit_elements,
+        "animate_trajectories": output_config.animate_trajectory,
         "plots": output_config.plots,
     }
 
