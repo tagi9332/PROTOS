@@ -4,253 +4,210 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from typing import Dict, Any
 
-# Maximum number of animation frames to keep GIF file size manageable
 _MAX_FRAMES = 200
 
+def get_eci_to_ric_dcm(r_chief: np.ndarray, v_chief: np.ndarray) -> np.ndarray:
+    r_norm = np.linalg.norm(r_chief, axis=1)[:, None]
+    u_R = r_chief / r_norm
+    
+    h = np.cross(r_chief, v_chief)
+    h_norm = np.linalg.norm(h, axis=1)[:, None]
+    u_C = h / h_norm
+    
+    u_I = np.cross(u_C, u_R)
+    
+    dcm = np.empty((len(r_chief), 3, 3))
+    dcm[:, 0, :] = u_R
+    dcm[:, 1, :] = u_I
+    dcm[:, 2, :] = u_C
+    return dcm
 
-def _build_satellites(results: Dict[str, Any]):
-    """Return a list of (name, data_dict) tuples for chief + all deputies."""
-    sats = []
-    chief_data = results.get("chief", {})
-    if chief_data:
-        sats.append(("chief", chief_data))
-    for name, data in results.get("deputies", {}).items():
-        sats.append((name, data))
-    return sats
+def get_body_to_eci_dcm(q: np.ndarray) -> np.ndarray:
+    w, x, y, z = q[:, 0], q[:, 1], q[:, 2], q[:, 3]
+    dcm = np.zeros((len(w), 3, 3))
+    
+    dcm[:, 0, 0] = 1 - 2*y**2 - 2*z**2
+    dcm[:, 0, 1] = 2*x*y - 2*w*z
+    dcm[:, 0, 2] = 2*x*z + 2*w*y
+    
+    dcm[:, 1, 0] = 2*x*y + 2*w*z
+    dcm[:, 1, 1] = 1 - 2*x**2 - 2*z**2
+    dcm[:, 1, 2] = 2*y*z - 2*w*x
+    
+    dcm[:, 2, 0] = 2*x*z - 2*w*y
+    dcm[:, 2, 1] = 2*y*z + 2*w*x
+    dcm[:, 2, 2] = 1 - 2*x**2 - 2*y**2
+    return dcm
 
+def generate_base_cone(fov_deg: float, length: float, resolution: int = 15):
+    half_angle = np.radians(fov_deg / 2.0)
+    z = np.linspace(0, length, resolution)
+    theta = np.linspace(0, 2 * np.pi, resolution)
+    Z, THETA = np.meshgrid(z, theta)
+    R = Z * np.tan(half_angle)
+    X = R * np.cos(THETA)
+    Y = R * np.sin(THETA)
+    return X, Y, Z
+
+def generate_base_cube(size: float):
+    """Generates the 8 vertices and 6 faces of a cube centered at the origin."""
+    s = size / 2.0
+    vertices = np.array([
+        [-s, -s, -s], [ s, -s, -s], [ s,  s, -s], [-s,  s, -s],
+        [-s, -s,  s], [ s, -s,  s], [ s,  s,  s], [-s,  s,  s]
+    ])
+    
+    faces_idx = [
+        [0, 1, 2, 3], # Bottom
+        [4, 5, 6, 7], # Top
+        [0, 1, 5, 4], # Front
+        [1, 2, 6, 5], # Right
+        [2, 3, 7, 6], # Back
+        [3, 0, 4, 7]  # Left
+    ]
+    return vertices, faces_idx
 
 def animate_6dof_states(results: Dict[str, Any], output_dir: str) -> None:
-    """
-    Create an animated GIF of the 6DOF states (ECI position, velocity, and,
-    when in 6DOF mode, quaternion and angular rate) for all chief and deputy
-    trajectories in the simulation.
-
-    The animation is saved as ``animation_6dof_states.gif`` inside *output_dir*.
-
-    Parameters
-    ----------
-    results : dict
-        Post-processed results dictionary as produced by
-        ``package_simulation_results``.  Must contain at minimum the keys
-        ``"time"``, ``"chief"``, ``"deputies"``, and ``"is_6dof"``.
-    output_dir : str
-        Directory in which the GIF will be saved.
-    """
     time = np.array(results.get("time", []), dtype=float)
     if len(time) == 0:
-        print("No time data available. Skipping animation.")
+        return
+
+    chief_data = results.get("chief", {})
+    deputies_dict = results.get("deputies", {})
+    if not chief_data or not deputies_dict:
         return
 
     is_6dof = results.get("is_6dof", False)
-    sats = _build_satellites(results)
-    if not sats:
-        print("No satellite data available. Skipping animation.")
-        return
+    r_chief = np.array(chief_data.get("r", []), dtype=float)
+    v_chief = np.array(chief_data.get("v", []), dtype=float)
 
-    # ------------------------------------------------------------------ #
-    # Frame decimation – cap animation length to _MAX_FRAMES              #
-    # ------------------------------------------------------------------ #
     n_total = len(time)
     step = max(1, n_total // _MAX_FRAMES)
     frame_indices = list(range(0, n_total, step))
     n_frames = len(frame_indices)
 
-    # Colour palette (one colour per satellite)
-    palette = plt.cm.tab10.colors
-    sat_colors = {name: palette[i % len(palette)] for i, (name, _) in enumerate(sats)}
+    # 1. Pre-compute rotations and bounds
+    dcm_eci2ric = get_eci_to_ric_dcm(r_chief, v_chief)
+    
+    deputy_trajectories_ric = {}
+    deputy_full_dcms = {}
+    max_ric_dist = 0.0
 
-    # ------------------------------------------------------------------ #
-    # Figure layout                                                        #
-    # ------------------------------------------------------------------ #
-    # Rows:
-    #   Row 0 : 3-D ECI trajectory  (spans all columns)
-    #   Row 1 : ECI position components  r_x, r_y, r_z
-    #   Row 2 : ECI velocity components  v_x, v_y, v_z
-    #   Row 3 : Quaternions q0..q3          (6DOF only)
-    #   Row 4 : Angular rates  ω_x, ω_y, ω_z (6DOF only)
-    #
-    # Columns 0-2 carry the time-series subplots.
-
-    n_ts_rows = 2 + (2 if is_6dof else 0)  # 2 (3DOF) or 4 (6DOF) time-series rows
-    n_rows = 1 + n_ts_rows
-
-    fig = plt.figure(figsize=(14, 3 * n_rows))
-    gs = fig.add_gridspec(n_rows, 3, hspace=0.55, wspace=0.35)
-
-    # --- 3-D ECI subplot (row 0, spans all 3 columns) ---
-    ax3d = fig.add_subplot(gs[0, :], projection="3d")
-
-    # --- Time-series subplots ---
-    # Row 1: r components
-    ax_rx = fig.add_subplot(gs[1, 0])
-    ax_ry = fig.add_subplot(gs[1, 1])
-    ax_rz = fig.add_subplot(gs[1, 2])
-
-    # Row 2: v components
-    ax_vx = fig.add_subplot(gs[2, 0])
-    ax_vy = fig.add_subplot(gs[2, 1])
-    ax_vz = fig.add_subplot(gs[2, 2])
-
-    ax_qw = ax_qx = ax_qy = None          # q0, q1, q2 (q3 overlaid on ax_qy)
-    ax_wx = ax_wy = ax_wz = None
-    if is_6dof:
-        # Row 3: three quaternion component axes (q0, q1, q2); q3 is overlaid on ax_qy
-        ax_qw = fig.add_subplot(gs[3, 0])
-        ax_qx = fig.add_subplot(gs[3, 1])
-        ax_qy = fig.add_subplot(gs[3, 2])
-
-        # Row 4: angular rate components (ω_x, ω_y, ω_z)
-        ax_wx = fig.add_subplot(gs[4, 0])
-        ax_wy = fig.add_subplot(gs[4, 1])
-        ax_wz = fig.add_subplot(gs[4, 2])
-
-    # ------------------------------------------------------------------ #
-    # Pre-compute ECI limits for 3-D plot                                 #
-    # ------------------------------------------------------------------ #
-    R_earth_km = 6378.137
-    all_r = []
-    for _, sat_data in sats:
-        r = np.array(sat_data.get("r", []), dtype=float)
-        if r.ndim == 2 and r.shape[1] == 3:
-            all_r.append(r)
-
-    if all_r:
-        combined = np.vstack(all_r)
-        max_val = max(np.max(np.abs(combined)), R_earth_km) * 1.1
-    else:
-        max_val = R_earth_km * 1.5
-
-    # ------------------------------------------------------------------ #
-    # Draw static elements on 3-D axes                                    #
-    # ------------------------------------------------------------------ #
-    u_e = np.linspace(0, 2 * np.pi, 40)
-    v_e = np.linspace(0, np.pi, 40)
-    x_e = R_earth_km * np.outer(np.cos(u_e), np.sin(v_e))
-    y_e = R_earth_km * np.outer(np.sin(u_e), np.sin(v_e))
-    z_e = R_earth_km * np.outer(np.ones(np.size(u_e)), np.cos(v_e))
-
-    ax3d.plot_surface(x_e, y_e, z_e, color="b", alpha=0.08, linewidth=0, shade=True)
-    ax3d.plot_wireframe(x_e, y_e, z_e, color="b", alpha=0.4,
-                        rstride=5, cstride=5, linewidth=0.4)
-
-    # Full trajectory lines (faded) and current-position markers
-    traj_lines_3d = {}
-    pos_markers_3d = {}
-    for name, sat_data in sats:
-        r = np.array(sat_data.get("r", []), dtype=float)
-        color = sat_colors[name]
-        if r.ndim == 2 and r.shape[1] == 3 and len(r) > 0:
-            ax3d.plot(r[:, 0], r[:, 1], r[:, 2],
-                      color=color, linewidth=1.0, alpha=0.25, zorder=1)
-            line, = ax3d.plot([], [], [], color=color,
-                              linewidth=1.5, zorder=2, label=name)
-            marker, = ax3d.plot([], [], [], "o", color=color,
-                                markersize=6, zorder=3)
-            traj_lines_3d[name] = (line, r)
-            pos_markers_3d[name] = (marker, r)
-
-    ax3d.set_xlim(-max_val, max_val)
-    ax3d.set_ylim(-max_val, max_val)
-    ax3d.set_zlim(-max_val, max_val)
-    ax3d.set_xlabel("X (km)", fontsize=8)
-    ax3d.set_ylabel("Y (km)", fontsize=8)
-    ax3d.set_zlabel("Z (km)", fontsize=8)
-    ax3d.set_title("ECI Trajectories", fontsize=9)
-    ax3d.legend(loc="upper right", fontsize=7)
-
-    # ------------------------------------------------------------------ #
-    # Time-series: draw full curves (faded) and animated vertical lines  #
-    # ------------------------------------------------------------------ #
-    ts_axes_config = [
-        (ax_rx, "r", 0, "r$_x$ (km)"),
-        (ax_ry, "r", 1, "r$_y$ (km)"),
-        (ax_rz, "r", 2, "r$_z$ (km)"),
-        (ax_vx, "v", 0, "v$_x$ (km/s)"),
-        (ax_vy, "v", 1, "v$_y$ (km/s)"),
-        (ax_vz, "v", 2, "v$_z$ (km/s)"),
-    ]
-    if is_6dof:
-        ts_axes_config += [
-            (ax_qw, "q", 0, "q$_0$"),
-            (ax_qx, "q", 1, "q$_1$"),
-            (ax_qy, "q", 2, "q$_2$"),
-            (ax_wx, "omega", 0, "$\\omega_x$ (rad/s)"),
-            (ax_wy, "omega", 1, "$\\omega_y$ (rad/s)"),
-            (ax_wz, "omega", 2, "$\\omega_z$ (rad/s)"),
-        ]
-        # q has 4 components; add q3 separately paired with ax_qy (reuse slot)
-        # We skip ax_qz since layout is 3-column; q3 overlaid on ax_qy below.
-
-    vlines = []  # (axes, vline_artist) pairs for animated vertical lines
-
-    for ax_ts, key, comp, ylabel in ts_axes_config:
-        if ax_ts is None:
+    for name, sat_data in deputies_dict.items():
+        r_dep = np.array(sat_data.get("r", []), dtype=float)
+        if len(r_dep) != n_total:
             continue
-        ax_ts.set_xlabel("Time (s)", fontsize=7)
-        ax_ts.set_ylabel(ylabel, fontsize=7)
-        ax_ts.tick_params(labelsize=6)
-        ax_ts.grid(True, linewidth=0.4)
+            
+        dr_eci = r_dep - r_chief
+        dr_ric = np.einsum('nij,nj->ni', dcm_eci2ric, dr_eci)
+        deputy_trajectories_ric[name] = dr_ric
+        max_ric_dist = max(max_ric_dist, np.max(np.abs(dr_ric)))
 
-        for name, sat_data in sats:
-            arr = np.array(sat_data.get(key, []), dtype=float)
-            color = sat_colors[name]
-            if arr.ndim == 2 and arr.shape[1] > comp and len(arr) == n_total:
-                ax_ts.plot(time, arr[:, comp], color=color,
-                           linewidth=0.8, alpha=0.55, label=name)
+        if is_6dof and "q" in sat_data:
+            q_dep = np.array(sat_data["q"], dtype=float)
+            dcm_b2eci = get_body_to_eci_dcm(q_dep)
+            dcm_b2ric = np.einsum('nij,njk->nik', dcm_eci2ric, dcm_b2eci)
+            deputy_full_dcms[name] = dcm_b2ric
 
-        ax_ts.legend(fontsize=6, loc="upper right")
-        if len(time) > 0:
-            vl = ax_ts.axvline(time[0], color="k", linewidth=0.8, linestyle="--")
-            vlines.append((ax_ts, vl))
+    # 2. Setup Figure and Geometries
+    fig = plt.figure(figsize=(8, 8))
+    ax3d = fig.add_subplot(111, projection="3d")
+    palette = plt.cm.tab10.colors
 
-    # If 6DOF: overlay q3 on the ax_qy panel so all 4 quaternion components visible
-    if is_6dof and ax_qy is not None:
-        for name, sat_data in sats:
-            q = np.array(sat_data.get("q", []), dtype=float)
-            color = sat_colors[name]
-            if q.ndim == 2 and q.shape[1] == 4 and len(q) == n_total:
-                ax_qy.plot(time, q[:, 3], color=color,
-                           linewidth=0.8, alpha=0.55, linestyle=":")
-        ax_qy.set_ylabel("q$_2$ / q$_3$", fontsize=7)
+    # Scale visuals based on the max trajectory distance
+    cone_length = max_ric_dist * 0.20 if max_ric_dist > 0 else 1.0
+    cube_size = max_ric_dist * 0.04 if max_ric_dist > 0 else 0.2
 
-    # Time label
-    time_text = fig.text(0.5, 0.98, "", ha="center", va="top",
-                         fontsize=9, fontweight="bold")
+    X_base, Y_base, Z_base = generate_base_cone(30.0, cone_length)
+    v_base_cube, faces_idx = generate_base_cube(cube_size)
 
-    # ------------------------------------------------------------------ #
-    # Animation update function                                           #
-    # ------------------------------------------------------------------ #
+    # Draw static axis-aligned Chief cube at origin
+    chief_faces = [[[v_base_cube[idx][0], v_base_cube[idx][1], v_base_cube[idx][2]] for idx in face] for face in faces_idx]
+    ax3d.add_collection3d(Poly3DCollection(chief_faces, facecolors='black', edgecolors='white', alpha=0.9))
+
+    lines_traj = {}
+    cone_artists = {}
+    cube_artists = {}
+
+    for i, name in enumerate(deputy_trajectories_ric.keys()):
+        color = palette[i % len(palette)]
+        lines_traj[name], = ax3d.plot([], [], [], color=color, linewidth=1.2, alpha=0.6, label=name)
+        cone_artists[name] = None
+        cube_artists[name] = None
+
+    bound = max_ric_dist * 1.1 if max_ric_dist > 0 else 10.0
+    ax3d.set_xlim(-bound, bound)
+    ax3d.set_ylim(-bound, bound)
+    ax3d.set_zlim(-bound, bound)
+    
+    try:
+        ax3d.set_box_aspect([1, 1, 1])
+    except AttributeError:
+        pass
+
+    ax3d.set_xlabel("Radial (km)")
+    ax3d.set_ylabel("In-track (km)")
+    ax3d.set_zlabel("Cross-track (km)")
+    ax3d.set_title("Relative Motion & Attitude in RIC", fontweight="bold")
+    ax3d.legend(loc="upper right", fontsize=9)
+    time_text = fig.text(0.15, 0.90, "", fontsize=10, fontweight="bold")
+
+    # 3. Animation Update Function
     def _update(frame_num):
         idx = frame_indices[frame_num]
-        t_now = time[idx]
+        time_text.set_text(f"Time: {time[idx]:.1f} s")
 
-        # 3-D current-position markers and growing trajectory lines
-        for name, (line, r) in traj_lines_3d.items():
-            line.set_data(r[:idx + 1, 0], r[:idx + 1, 1])
-            line.set_3d_properties(r[:idx + 1, 2])
-        for name, (marker, r) in pos_markers_3d.items():
-            marker.set_data([r[idx, 0]], [r[idx, 1]])
-            marker.set_3d_properties([r[idx, 2]])
+        for i, name in enumerate(deputy_trajectories_ric.keys()):
+            r_ric = deputy_trajectories_ric[name]
+            color = palette[i % len(palette)]
+            
+            # Update trajectory
+            lines_traj[name].set_data(r_ric[:idx + 1, 0], r_ric[:idx + 1, 1])
+            lines_traj[name].set_3d_properties(r_ric[:idx + 1, 2])
+            
+            # Remove old dynamic artists
+            if cone_artists[name] is not None:
+                cone_artists[name].remove()
+            if cube_artists[name] is not None:
+                cube_artists[name].remove()
+            
+            r_c = r_ric[idx]
 
-        # Vertical time-indicator lines
-        for _, vl in vlines:
-            vl.set_xdata([t_now, t_now])
+            # Determine rotation (default to identity if no attitude data)
+            dcm = deputy_full_dcms[name][idx] if name in deputy_full_dcms else np.eye(3)
 
-        time_text.set_text(f"t = {t_now:.1f} s")
+            # Draw Deputy Cube
+            v_rot = (dcm @ v_base_cube.T).T + r_c
+            faces = [[[v_rot[vi][0], v_rot[vi][1], v_rot[vi][2]] for vi in face] for face in faces_idx]
+            
+            cube_col = Poly3DCollection(faces, facecolors=color, linewidths=0.5, edgecolors='black', alpha=0.8)
+            cube_artists[name] = ax3d.add_collection3d(cube_col)
+
+            # Draw FOV Cone
+            if name in deputy_full_dcms:
+                pts = np.vstack((X_base.flatten(), Y_base.flatten(), Z_base.flatten()))
+                pts_rot = dcm @ pts 
+                
+                X_new = pts_rot[0, :].reshape(X_base.shape) + r_c[0]
+                Y_new = pts_rot[1, :].reshape(Y_base.shape) + r_c[1]
+                Z_new = pts_rot[2, :].reshape(Z_base.shape) + r_c[2]
+                
+                cone_artists[name] = ax3d.plot_surface(
+                    X_new, Y_new, Z_new, 
+                    color=color, alpha=0.2, linewidth=0, shade=False, antialiased=True
+                )
+
         return []
 
-    # ------------------------------------------------------------------ #
-    # Build and save animation                                            #
-    # ------------------------------------------------------------------ #
+    # 4. Save
     fps = max(5, min(20, n_frames // 10))
-    anim = animation.FuncAnimation(
-        fig, _update, frames=n_frames, interval=1000 // fps, blit=False
-    )
+    anim = animation.FuncAnimation(fig, _update, frames=n_frames, interval=1000 // fps, blit=False)
 
     os.makedirs(output_dir, exist_ok=True)
-    gif_path = os.path.join(output_dir, "animation_6dof_states.gif")
+    gif_path = os.path.join(output_dir, "animation_ric_relative_fov.gif")
 
     writer = animation.PillowWriter(fps=fps)
     anim.save(gif_path, writer=writer)
