@@ -33,7 +33,7 @@
     {
       "name": "Deputy_A",
     "initial_state": {
-      "state": [0.05, 0.03, 1.5708, 0, 0, 0], 
+      "state": [0.04, 0.03, 1.9199, 0.3491, 0, 0], 
       "frame": "LROEs"
       
       },
@@ -61,7 +61,7 @@
   "output": {
     "save_orbit_elements": false,
     "save_gnc_results": false,
-    "plots": false,
+    "plots": true,
     "animate_trajectory": false
   }
 }

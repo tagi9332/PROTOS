@@ -12,8 +12,8 @@ from utils.print_functions.print_sim_progress import print_sim_progress
 
 def main():
     # --- Initialization ---
-    # input_file_path = "data\\input_files\\ASEN_6084_Project\\two_sat_nmc.jsonx"
-    input_file_path = "data\\input_files\\test_config_6dof_rpo.jsonx"
+    input_file_path = "data\\input_files\\ASEN_6084_Project\\two_sat_nmc.jsonx"
+
     # Load config and extract sim settings
     config = init_PROTOS.init_PROTOS(input_file_path)
     sim_config = config["simulation"]
