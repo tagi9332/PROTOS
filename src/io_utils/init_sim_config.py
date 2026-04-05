@@ -7,9 +7,10 @@ from typing import Dict, Any
 
 @dataclass
 class OutputConfig:
-    trajectory_file: str = "data/results/trajectory.csv"
-    gnc_file: str = "data/results/gnc_results.csv"
+    save_gnc_results: bool = True
+    save_orbit_elements: bool = True
     plots: bool = True
+    animate_trajectory: bool = True
 
 @dataclass
 class PerturbationsConfig:
@@ -74,9 +75,10 @@ def init_sim_config(raw_config: dict) -> SimConfig:
     # Instantiate the output config
     output_raw = raw_config.get("output", {})
     output_config = OutputConfig(
-        trajectory_file=output_raw.get("trajectory_file", "data/results/trajectory.csv"),
-        gnc_file=output_raw.get("gnc_file", "data/results/gnc_results.csv"),
-        plots=output_raw.get("plots", True)
+        save_orbit_elements=output_raw.get("save_orbit_elements", True),
+        save_gnc_results=output_raw.get("save_gnc_results", True),
+        plots=output_raw.get("plots", True),
+        animate_trajectory=output_raw.get("animate_trajectory", True)
     )
 
     # Return the unified configuration

@@ -12,12 +12,13 @@ from utils.print_functions.print_sim_progress import print_sim_progress
 
 def main():
     # --- Initialization ---
-    input_file_path = "data/input_files/test_config_6dof_rpo_multi_agent.jsonx"
-
+    # input_file_path = "data\\input_files\\ASEN_6084_Project\\two_sat_nmc.jsonx"
+    input_file_path = "data\\input_files\\test_config_6dof_rpo.jsonx"
     # Load config and extract sim settings
     config = init_PROTOS.init_PROTOS(input_file_path)
     sim_config = config["simulation"]
     gnc_config = config["gnc"]
+    output_config = config["post_process"]
 
     dt = sim_config.time_step
     t_eval = sim_config.t_eval
@@ -71,7 +72,7 @@ def main():
     # --- Post Processing ---
     post_dict = package_simulation_results(trajectory, gnc_results, t_eval, is_6dof)
     post_dict["input_file"] = input_file_path 
-    post_process.post_process(post_dict)
+    post_process.post_process(post_dict, output_config)
 
 if __name__ == "__main__":
     main()

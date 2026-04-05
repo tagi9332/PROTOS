@@ -212,5 +212,3 @@ def animate_6dof_states(results: Dict[str, Any], output_dir: str) -> None:
     writer = animation.PillowWriter(fps=fps)
     anim.save(gif_path, writer=writer)
     plt.close(fig)
-
-    print(f"Animation saved to {gif_path}")
