@@ -102,9 +102,9 @@
 
 
   "output": {
-    "save_orbit_elements": false,
-    "save_gnc_results": false,
-    "plots": false,
-    "animate_trajectory": false
+    "save_orbit_elements": true,
+    "save_gnc_results": true,
+    "plots": true,
+    "animate_trajectory": true
   }
 }

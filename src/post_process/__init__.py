@@ -11,3 +11,4 @@ from .plot_oes import plot_orbital_elements
 from .plot_control_effort import plot_attitude_control, plot_control_accel
 from .plot_attitude import plot_attitude
 from .animate_6dof_states import animate_6dof_states
+from .plot_2d_ground_tracks import plot_2d_ground_tracks

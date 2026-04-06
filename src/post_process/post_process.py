@@ -17,6 +17,7 @@ from src.post_process import (
     plot_control_accel,
     plot_attitude,
     animate_6dof_states,
+    plot_2d_ground_tracks,
     setup_output_dir
 )
 
@@ -46,6 +47,7 @@ def post_process(results, output_config):
         plot_ECI_trajectories(results, main_output_dir)
         save_iso_view(results, main_output_dir)
         plot_relative_separation(results, main_output_dir)
+        plot_2d_ground_tracks(results, main_output_dir)
     if animate_trajectories:
         animate_6dof_states(results, main_output_dir)
 
