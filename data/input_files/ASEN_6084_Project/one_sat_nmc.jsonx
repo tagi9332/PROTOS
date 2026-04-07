@@ -29,21 +29,9 @@
     {
       "name": "Deputy_A",
     "initial_state": {
-      "state": [0.04, 0.03, 1.9199, 0.3491, 0, 0], 
+      "state": [0.04, 0.00, 1.57079633, 0, 0, 0], 
       "frame": "LROEs"
       
-      },
-      "mass": 300.0,
-      "properties": {
-        "area": 10.0,
-        "Cd": 2.0
-      }
-    },
-    {
-      "name": "Deputy_B",
-    "initial_state": {
-      "state": [0.05, 0.05, 4.7124, 3.1416, 0, 0], 
-      "frame": "LROEs"
       },
       "mass": 300.0,
       "properties": {
@@ -58,6 +46,6 @@
     "save_orbit_elements": false,
     "save_gnc_results": false,
     "plots": true,
-    "animate_trajectory": false
+    "animate_trajectory": true
   }
 }

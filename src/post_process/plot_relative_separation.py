@@ -2,11 +2,11 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot_relative_separation(results_serializable, output_dir):
+def plot_relative_separation(results_serializable, vehicle_dirs):
     """
     Plots stacked subplots of relative separation magnitude and relative velocity magnitude
     for every deputy relative to the chief. Adds an annotation at the closest separation point.
-    Saves individual relative_separation_[sat_name].png files.
+    Saves individual relative_separation_[sat_name].png files in their vehicle-specific directories.
     """
     time = np.array(results_serializable.get("time", []), dtype=float)
     deputies = results_serializable.get("deputies", {})
@@ -15,9 +15,12 @@ def plot_relative_separation(results_serializable, output_dir):
         print("Time or deputy data missing. Skipping relative separation plots.")
         return
 
-    os.makedirs(output_dir, exist_ok=True)
-
     for sat_name, sat_data in deputies.items():
+        # 1. Look up the specific directory for this satellite
+        # If it's not found in the dict for some reason, fallback to current dir
+        sat_out_dir = vehicle_dirs.get(sat_name, ".") 
+        os.makedirs(sat_out_dir, exist_ok=True)
+
         # Extract relative position and velocity (Hill frame)
         rel_pos = np.array(sat_data.get("rho", []), dtype=float)
         rel_vel = np.array(sat_data.get("rho_dot", []), dtype=float)
@@ -81,7 +84,9 @@ def plot_relative_separation(results_serializable, output_dir):
         # -------------------------
         plt.tight_layout()
         safe_name = sat_name.replace(" ", "_").lower()
-        filename = os.path.join(output_dir, f"relative_separation_{safe_name}.png")
+        
+        # 2. Save the file to the specific satellite's directory
+        filename = os.path.join(sat_out_dir, f"relative_separation_{safe_name}.png")
+        
         plt.savefig(filename, dpi=300)
         plt.close(fig)
-

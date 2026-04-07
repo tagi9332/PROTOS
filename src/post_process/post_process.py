@@ -45,7 +45,7 @@ def post_process(results, output_config):
     if plots:
         plot_ECI_trajectories(results, main_output_dir)
         save_iso_view(results, main_output_dir)
-        plot_relative_separation(results, main_output_dir)
+        
     if animate_trajectories:
         animate_6dof_states(results, main_output_dir)
 
@@ -53,7 +53,9 @@ def post_process(results, output_config):
     # B. Vehicle-Specific Results 
     # ==========================================
     save_state_csv(results, vehicle_dirs)
-    if plots: save_plane_views(results, vehicle_dirs)
+    if plots:
+        save_plane_views(results, vehicle_dirs)
+        plot_relative_separation(results, vehicle_dirs)
     if save_gnc_results: save_control_accel(results, vehicle_dirs)
     if save_orbit_elements:
         coes_dict = save_orbital_elements(results, vehicle_dirs)
