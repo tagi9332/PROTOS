@@ -3,7 +3,7 @@
   "simulation": {
     "epoch": "2000-01-01T12:00:00Z",
     "duration": 172800,
-    "time_step": 360,
+    "time_step": 3600,
     "propagator": "2BODY",
     "perturbations": {
       "J2": true,
@@ -1435,7 +1435,7 @@
   "output": {
     "save_orbit_elements": false,
     "save_gnc_results": false,
-    "plots": false,
+    "plots": true,
     "animate_trajectory": false
   }
 }

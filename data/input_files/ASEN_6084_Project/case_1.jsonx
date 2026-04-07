@@ -4,7 +4,7 @@
     "simulation": {
     "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC
     "duration": 86400,                  // seconds
-    "time_step": 60,                   // seconds
+    "time_step": 3600,                   // seconds
     "propagator": "2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
     "perturbations": {
       "J2": true,
@@ -29,7 +29,7 @@
     {
       "name": "Deputy_A",
     "initial_state": {
-      "state": [0.04, 0.00, 1.57079633, 0, 0, 0], 
+      "state": [0.4, 0.00, 1.57079633, 0, 0, 0], 
       "frame": "LROEs"
       
       },

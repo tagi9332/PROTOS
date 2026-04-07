@@ -64,7 +64,7 @@ def generate_breakup_scenario(num_debris, max_vel, output_filename="breakup_conf
 
 if __name__ == "__main__":
     # --- CONFIGURATION ---
-    NUM_DEBRIS = 100                 # Number of debris pieces to generate
+    NUM_DEBRIS = 10                 # Number of debris pieces to generate
     MAX_REL_VELOCITY = 0.000015       # Max velocity in km/s
     # ---------------------
     

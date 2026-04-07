@@ -1,0 +1,181 @@
+{
+  "scenario": "Test Configuration for Orbit Propagation",
+  "simulation": {
+    "epoch": "2000-01-01T12:00:00Z",
+    "duration": 172800,
+    "time_step": 3600,
+    "propagator": "2BODY",
+    "perturbations": {
+      "J2": true,
+      "drag": false,
+      "SRP": false
+    }
+  },
+  "satellites": [
+    {
+      "name": "Chief",
+      "initial_state": {
+        "state": [
+          42164.14,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "frame": "OEs"
+      },
+      "mass": 500.0,
+      "properties": {
+        "area": 10.0,
+        "Cd": 2.2
+      }
+    },
+    {
+      "name": "Debris_01_Random",
+      "initial_state": {
+        "state": [
+          0.0,
+          0.0,
+          0.0,
+          -1.0876637722388347e-05,
+          4.533368581030775e-06,
+          -1.5260211079923295e-06
+        ],
+        "frame": "LVLH"
+      }
+    },
+    {
+      "name": "Debris_02_Random",
+      "initial_state": {
+        "state": [
+          0.0,
+          0.0,
+          0.0,
+          3.227367570795256e-06,
+          -2.684757307006796e-06,
+          4.409343023364639e-06
+        ],
+        "frame": "LVLH"
+      }
+    },
+    {
+      "name": "Debris_03_Random",
+      "initial_state": {
+        "state": [
+          0.0,
+          0.0,
+          0.0,
+          1.2680747629298834e-05,
+          6.068512366615571e-06,
+          -8.772830100698713e-06
+        ],
+        "frame": "LVLH"
+      }
+    },
+    {
+      "name": "Debris_04_Random",
+      "initial_state": {
+        "state": [
+          0.0,
+          0.0,
+          0.0,
+          5.803339324942063e-06,
+          9.82326000535749e-06,
+          -2.5385933063029047e-06
+        ],
+        "frame": "LVLH"
+      }
+    },
+    {
+      "name": "Debris_05_Random",
+      "initial_state": {
+        "state": [
+          0.0,
+          0.0,
+          0.0,
+          -1.0812215782340644e-05,
+          4.330129235881863e-06,
+          -1.399698340029141e-05
+        ],
+        "frame": "LVLH"
+      }
+    },
+    {
+      "name": "Debris_06_Random",
+      "initial_state": {
+        "state": [
+          0.0,
+          0.0,
+          0.0,
+          1.4874477087539344e-05,
+          -1.381391677059101e-05,
+          -1.601051640242003e-06
+        ],
+        "frame": "LVLH"
+      }
+    },
+    {
+      "name": "Debris_07_Random",
+      "initial_state": {
+        "state": [
+          0.0,
+          0.0,
+          0.0,
+          -1.3533954975940898e-05,
+          7.833060157998536e-06,
+          -1.189613747813784e-05
+        ],
+        "frame": "LVLH"
+      }
+    },
+    {
+      "name": "Debris_08_Random",
+      "initial_state": {
+        "state": [
+          0.0,
+          0.0,
+          0.0,
+          1.1708334348367591e-05,
+          -1.3369503729689971e-05,
+          1.2760608687901084e-06
+        ],
+        "frame": "LVLH"
+      }
+    },
+    {
+      "name": "Debris_09_Random",
+      "initial_state": {
+        "state": [
+          0.0,
+          0.0,
+          0.0,
+          4.441042030146492e-06,
+          -6.827723880403523e-06,
+          9.928038229728338e-06
+        ],
+        "frame": "LVLH"
+      }
+    },
+    {
+      "name": "Debris_10_Random",
+      "initial_state": {
+        "state": [
+          0.0,
+          0.0,
+          0.0,
+          4.336442774391061e-06,
+          7.000392097399514e-06,
+          1.101827488512719e-05
+        ],
+        "frame": "LVLH"
+      }
+    }
+  ],
+  "output": {
+    "save_orbit_elements": false,
+    "save_gnc_results": false,
+    "plots": true,
+    "animate_trajectory": false
+  }
+}

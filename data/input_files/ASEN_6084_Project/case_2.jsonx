@@ -4,7 +4,7 @@
     "simulation": {
     "epoch": "2000-01-01T12:00:00Z",        // epoch in UTC
     "duration": 86400,                  // seconds
-    "time_step": 60,                   // seconds
+    "time_step": 3600,                   // seconds
     "propagator": "2BODY",          // options: CWH, 2BODY, LINEARIZED_2BODY, TH
     "perturbations": {
       "J2": true,
@@ -19,30 +19,27 @@
       "initial_state": {
         "state": [42164.14, 0.0, 0.0, 0.0, 0.0, 0.0], 
         "frame": "OEs"
-      },
-      "mass": 500.0,
-      "properties": {
-        "area": 10.0,
-        "Cd": 2.2
+      }
+    },
+    {
+      "name": "Deputy_0",
+      "initial_state": {
+        "state": [0, 0.0, 0.0, 0.0, 0.0, 0.0], 
+        "frame": "LVLH"
       }
     },
     {
       "name": "Deputy_A",
     "initial_state": {
-      "state": [0.04, 0.03, 1.9199, 0.3491, 0, 0], 
+      "state": [0.4, 0.30, 1.57079633, 0, 0, 0], 
       "frame": "LROEs"
       
-      },
-      "mass": 300.0,
-      "properties": {
-        "area": 10.0,
-        "Cd": 2.0
       }
     },
     {
       "name": "Deputy_B",
     "initial_state": {
-      "state": [0.05, 0.05, 4.7124, 3.1416, 0, 0], 
+      "state": [0.4, 0.3, 1.77079633, 0.2, 0, 0], 
       "frame": "LROEs"
       },
       "mass": 300.0,

@@ -36,8 +36,8 @@ def consolidate_trajectories(source_dir: str, dest_dir: str):
 if __name__ == "__main__":
     # --- CONFIGURATION ---
     # Replace these strings with your actual directory paths
-    TOP_LEVEL_FOLDER = "data/results/2026-04-05_17-38-47" 
-    CONSOLIDATED_FOLDER = "data/results/2026-04-05_17-38-47/consolidated_trajectories"
+    TOP_LEVEL_FOLDER = "data/results/2026-04-07_12-13-41" 
+    CONSOLIDATED_FOLDER = "data/results/2026-04-07_12-13-41/consolidated_trajectories"
     # ---------------------
     
     consolidate_trajectories(TOP_LEVEL_FOLDER, CONSOLIDATED_FOLDER)

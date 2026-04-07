@@ -54,7 +54,7 @@ def post_process(results, output_config):
     # ==========================================
     save_state_csv(results, vehicle_dirs)
     if plots:
-        save_plane_views(results, vehicle_dirs)
+        save_plane_views(results, vehicle_dirs, main_output_dir)
         plot_relative_separation(results, vehicle_dirs)
     if save_gnc_results: save_control_accel(results, vehicle_dirs)
     if save_orbit_elements:
